@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>IamJfabian</title>
+    <link>https://iamjfabian.com/</link>
+    <description>Recent content on IamJfabian</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sun, 26 May 2024 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://iamjfabian.com/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Primer post</title>
+      <link>https://iamjfabian.com/blogs/primer-post/</link>
+      <pubDate>Sun, 26 May 2024 00:00:00 +0000</pubDate>
+      <guid>https://iamjfabian.com/blogs/primer-post/</guid>
+      <description>Este es un resumen corto del post.</description>
+    </item>
+  </channel>
+</rss>
