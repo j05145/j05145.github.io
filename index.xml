@@ -2,18 +2,18 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>IamJfabian</title>
-    <link>https://iamjfabian.com/</link>
+    <link>http://localhost:1313/</link>
     <description>Recent content on IamJfabian</description>
     <generator>Hugo</generator>
     <language>en-us</language>
     <lastBuildDate>Mon, 26 May 2025 00:00:00 +0000</lastBuildDate>
-    <atom:link href="https://iamjfabian.com/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Compromising an Azure Tenant via XXE OOB and web.config Exfiltration</title>
-      <link>https://iamjfabian.com/blogs/compromising-azure-xxe/</link>
+      <link>http://localhost:1313/blogs/compromising-azure-xxe/compromising-azure-xxe/</link>
       <pubDate>Mon, 26 May 2025 00:00:00 +0000</pubDate>
-      <guid>https://iamjfabian.com/blogs/compromising-azure-xxe/</guid>
-      <description>In this post, I’ll walk you through how an XML External Entity (XXE) vulnerability with Out-of-Band (OOB) exfiltration capabilities led to the compromise of an Azure tenant during a hybrid penetration test engagement&amp;hellip;&#xA;curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64&#xA;chmod +x tailwindcss-linux-x64 sudo mv tailwindcss-linux-x64 /usr/local/bin/tailwindcss</description>
+      <guid>http://localhost:1313/blogs/compromising-azure-xxe/compromising-azure-xxe/</guid>
+      <description>Introduction During a recent pentest engagement for a transactional company fully hosted in Microsoft Azure, we were assigned to conduct both an external black-box assessment and an authenticated gray-box evaluation within a two-week window. The scope included all publicly exposed services as well as internal resources accessible to authenticated users with least-privilege roles. The initial phase of the assessment followed our standard methodology, encompassing reconnaissance, service enumeration, fingerprinting, and testing for common misconfigurations.</description>
     </item>
   </channel>
 </rss>
