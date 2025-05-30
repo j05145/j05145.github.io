@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Tutorials on IamJfabian</title>
+    <link>http://localhost:1313/categories/tutorials/</link>
+    <description>Recent content in Tutorials on IamJfabian</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <lastBuildDate>Wed, 15 Mar 2023 10:30:00 +0530</lastBuildDate>
+    <atom:link href="http://localhost:1313/categories/tutorials/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>My First Post</title>
+      <link>http://localhost:1313/blogs/primer-post/</link>
+      <pubDate>Wed, 15 Mar 2023 10:30:00 +0530</pubDate>
+      <guid>http://localhost:1313/blogs/primer-post/</guid>
+      <description>Este es el primer párrafo.&#xD;Este es el segundo párrafo, con separación adecuada.&#xD;- Lista 1&#xD;- Lista 2&#xD;## Encabezado&#xD;Otro párrafo más.</description>
+    </item>
+  </channel>
+</rss>

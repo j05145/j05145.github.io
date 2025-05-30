@@ -2,17 +2,35 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://iamjfabian.com/</loc>
-    <lastmod>2025-05-18T00:15:27-04:00</lastmod>
-  </url><url>
-    <loc>https://iamjfabian.com/posts/</loc>
-    <lastmod>2025-05-18T00:15:27-04:00</lastmod>
+    <loc>https://iamjfabian.com/tags/azure/</loc>
+    <lastmod>2025-05-26T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://iamjfabian.com/blogs/</loc>
-    <lastmod>2024-05-26T00:00:00+00:00</lastmod>
+    <lastmod>2025-05-26T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://iamjfabian.com/blogs/primer-post/</loc>
-    <lastmod>2024-05-26T00:00:00+00:00</lastmod>
+    <loc>https://iamjfabian.com/tags/cloud-security/</loc>
+    <lastmod>2025-05-26T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://iamjfabian.com/blogs/compromising-azure-xxe/</loc>
+    <lastmod>2025-05-26T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://iamjfabian.com/tags/hugo/</loc>
+    <lastmod>2025-05-26T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://iamjfabian.com/</loc>
+    <lastmod>2025-05-26T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://iamjfabian.com/tags/noir/</loc>
+    <lastmod>2025-05-26T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://iamjfabian.com/tags/pentest/</loc>
+    <lastmod>2025-05-26T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://iamjfabian.com/tags/</loc>
+    <lastmod>2025-05-26T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://iamjfabian.com/tags/xxe/</loc>
+    <lastmod>2025-05-26T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://iamjfabian.com/contact/</loc>
   </url><url>
@@ -23,7 +41,5 @@
     <loc>https://iamjfabian.com/experience/</loc>
   </url><url>
     <loc>https://iamjfabian.com/categories/</loc>
-  </url><url>
-    <loc>https://iamjfabian.com/tags/</loc>
   </url>
 </urlset>

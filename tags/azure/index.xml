@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Azure on IamJfabian</title>
+    <link>https://iamjfabian.com/tags/azure/</link>
+    <description>Recent content in Azure on IamJfabian</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <lastBuildDate>Mon, 26 May 2025 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://iamjfabian.com/tags/azure/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Compromising an Azure Tenant via XXE OOB and web.config Exfiltration</title>
+      <link>https://iamjfabian.com/blogs/compromising-azure-xxe/</link>
+      <pubDate>Mon, 26 May 2025 00:00:00 +0000</pubDate>
+      <guid>https://iamjfabian.com/blogs/compromising-azure-xxe/</guid>
+      <description>In this post, I’ll walk you through how an XML External Entity (XXE) vulnerability with Out-of-Band (OOB) exfiltration capabilities led to the compromise of an Azure tenant during a hybrid penetration test engagement&amp;hellip;&#xA;curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64&#xA;chmod +x tailwindcss-linux-x64 sudo mv tailwindcss-linux-x64 /usr/local/bin/tailwindcss</description>
+    </item>
+  </channel>
+</rss>
