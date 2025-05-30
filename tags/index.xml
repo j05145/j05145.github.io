@@ -2,52 +2,52 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Tags on IamJfabian</title>
-    <link>http://localhost:1313/tags/</link>
+    <link>https://iamjfabian.com/tags/</link>
     <description>Recent content in Tags on IamJfabian</description>
     <generator>Hugo</generator>
     <language>en-us</language>
     <lastBuildDate>Mon, 26 May 2025 00:00:00 +0000</lastBuildDate>
-    <atom:link href="http://localhost:1313/tags/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://iamjfabian.com/tags/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Azure</title>
-      <link>http://localhost:1313/tags/azure/</link>
+      <link>https://iamjfabian.com/tags/azure/</link>
       <pubDate>Mon, 26 May 2025 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/tags/azure/</guid>
+      <guid>https://iamjfabian.com/tags/azure/</guid>
       <description></description>
     </item>
     <item>
       <title>Cloud-Security</title>
-      <link>http://localhost:1313/tags/cloud-security/</link>
+      <link>https://iamjfabian.com/tags/cloud-security/</link>
       <pubDate>Mon, 26 May 2025 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/tags/cloud-security/</guid>
+      <guid>https://iamjfabian.com/tags/cloud-security/</guid>
       <description></description>
     </item>
     <item>
       <title>Hugo</title>
-      <link>http://localhost:1313/tags/hugo/</link>
+      <link>https://iamjfabian.com/tags/hugo/</link>
       <pubDate>Mon, 26 May 2025 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/tags/hugo/</guid>
+      <guid>https://iamjfabian.com/tags/hugo/</guid>
       <description></description>
     </item>
     <item>
       <title>Noir</title>
-      <link>http://localhost:1313/tags/noir/</link>
+      <link>https://iamjfabian.com/tags/noir/</link>
       <pubDate>Mon, 26 May 2025 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/tags/noir/</guid>
+      <guid>https://iamjfabian.com/tags/noir/</guid>
       <description></description>
     </item>
     <item>
       <title>Pentest</title>
-      <link>http://localhost:1313/tags/pentest/</link>
+      <link>https://iamjfabian.com/tags/pentest/</link>
       <pubDate>Mon, 26 May 2025 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/tags/pentest/</guid>
+      <guid>https://iamjfabian.com/tags/pentest/</guid>
       <description></description>
     </item>
     <item>
       <title>Xxe</title>
-      <link>http://localhost:1313/tags/xxe/</link>
+      <link>https://iamjfabian.com/tags/xxe/</link>
       <pubDate>Mon, 26 May 2025 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/tags/xxe/</guid>
+      <guid>https://iamjfabian.com/tags/xxe/</guid>
       <description></description>
     </item>
   </channel>

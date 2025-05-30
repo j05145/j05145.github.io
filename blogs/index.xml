@@ -2,17 +2,17 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Blogs on IamJfabian</title>
-    <link>http://localhost:1313/blogs/</link>
+    <link>https://iamjfabian.com/blogs/</link>
     <description>Recent content in Blogs on IamJfabian</description>
     <generator>Hugo</generator>
     <language>en-us</language>
     <lastBuildDate>Mon, 26 May 2025 00:00:00 +0000</lastBuildDate>
-    <atom:link href="http://localhost:1313/blogs/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://iamjfabian.com/blogs/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Compromising an Azure Tenant via XXE OOB and web.config Exfiltration</title>
-      <link>http://localhost:1313/blogs/compromising-azure-xxe/compromising-azure-xxe/</link>
+      <link>https://iamjfabian.com/blogs/compromising-azure-xxe/compromising-azure-xxe/</link>
       <pubDate>Mon, 26 May 2025 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/blogs/compromising-azure-xxe/compromising-azure-xxe/</guid>
+      <guid>https://iamjfabian.com/blogs/compromising-azure-xxe/compromising-azure-xxe/</guid>
       <description>Introduction During a recent pentest engagement for a transactional company fully hosted in Microsoft Azure, we were assigned to conduct both an external black-box assessment and an authenticated gray-box evaluation within a two-week window. The scope included all publicly exposed services as well as internal resources accessible to authenticated users with least-privilege roles. The initial phase of the assessment followed our standard methodology, encompassing reconnaissance, service enumeration, fingerprinting, and testing for common misconfigurations.</description>
     </item>
   </channel>
