@@ -13,7 +13,7 @@
       <link>https://iamjfabian.com/blogs/compromising-azure-xxe/compromising-azure-xxe/</link>
       <pubDate>Mon, 26 May 2025 00:00:00 +0000</pubDate>
       <guid>https://iamjfabian.com/blogs/compromising-azure-xxe/compromising-azure-xxe/</guid>
-      <description>Introduction During a recent pentest engagement for a transactional company fully hosted in Microsoft Azure, we were assigned to conduct both an external black-box assessment and an authenticated gray-box evaluation within a two-week window. The scope included all publicly exposed services as well as internal resources accessible to authenticated users with least-privilege roles. The initial phase of the assessment followed our standard methodology, encompassing reconnaissance, service enumeration, fingerprinting, and testing for common misconfigurations.</description>
+      <description>Introduction During a recent pentest engagement for a transactional company fully hosted in Microsoft Azure, we were assigned to conduct both an external black-box assessment and an authenticated gray-box evaluation within a two-week window. The scope included all publicly exposed services as well as internal resources accessible to authenticated users with least-privilege roles.&#xA;The initial phase of the assessment followed our standard methodology, encompassing reconnaissance, service enumeration, fingerprinting, and testing for common misconfigurations.</description>
     </item>
   </channel>
 </rss>
