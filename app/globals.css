@@ -1,0 +1,268 @@
+@import "tailwindcss";
+
+:root {
+  /* Mismos tokens del sistema "SE BUSCA" del hub (hub.iamjfabian.com):
+     negro/oliva de fondo + verde terminal (rust) como acento de marca +
+     naranja (mustard) como segundo acento. Tema OSCURO por defecto — el
+     claro solo redefine superficie de contenido bajo [data-theme="light"],
+     el shell (leather/cream) se mantiene oscuro, es la identidad. */
+  --color-paper: #0e0e0e;
+  --color-paper-dark: #111208;
+  --color-paper-line: #3a3830;
+
+  --color-ink: #f2ede0;
+  --color-ink-2: #e6e0cf;
+  --color-ink-soft: #b3afa5;
+  --color-tan: #b8b29a;
+  --color-tan-2: #dad3b8;
+  --color-gray: #666666;
+
+  --color-leather: #1b1d10;
+  --color-leather-dark: #0e0e0e;
+  --color-leather-line: #3a3830;
+  --color-cream: #f2ede0;
+
+  --color-rust: #14b86a;
+  --color-rust-dark: #11633c;
+  --color-mustard: #e67e22;
+  --color-mustard-dark: #7a4618;
+  --color-sage: #14b86a;
+  --color-sage-dark: #11633c;
+
+  --color-rust-text: var(--color-rust);
+  --color-mustard-text: var(--color-mustard);
+  --color-sage-text: var(--color-sage);
+
+  --font-display: "Rye", serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+
+:root[data-theme="light"] {
+  --color-paper: #f2ede0;
+  --color-paper-dark: #e6e0cf;
+  --color-paper-line: #c3bfb2;
+
+  --color-ink: #1b1d10;
+  --color-ink-2: #2c2e1f;
+  --color-ink-soft: #4a4636;
+
+  --color-rust-text: var(--color-rust-dark);
+  --color-mustard-text: var(--color-mustard-dark);
+  --color-sage-text: var(--color-sage-dark);
+}
+
+@theme inline {
+  --color-paper: var(--color-paper);
+  --color-paper-dark: var(--color-paper-dark);
+  --color-paper-line: var(--color-paper-line);
+  --color-ink: var(--color-ink);
+  --color-ink-2: var(--color-ink-2);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-tan: var(--color-tan);
+  --color-tan-2: var(--color-tan-2);
+  --color-gray: var(--color-gray);
+  --color-leather: var(--color-leather);
+  --color-leather-dark: var(--color-leather-dark);
+  --color-leather-line: var(--color-leather-line);
+  --color-cream: var(--color-cream);
+  --color-rust: var(--color-rust);
+  --color-rust-dark: var(--color-rust-dark);
+  --color-rust-text: var(--color-rust-text);
+  --color-mustard: var(--color-mustard);
+  --color-mustard-dark: var(--color-mustard-dark);
+  --color-mustard-text: var(--color-mustard-text);
+  --color-sage: var(--color-sage);
+  --color-sage-dark: var(--color-sage-dark);
+  --color-sage-text: var(--color-sage-text);
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --animate-fade-in-up: fade-in-up 0.35s ease-out both;
+  --animate-fade-in: fade-in 0.3s ease-out both;
+  --animate-pop-in: pop-in 0.25s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.stagger-children > * {
+  animation: fade-in-up 0.3s ease-out both;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 30ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 60ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 90ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 120ms; }
+.stagger-children > *:nth-child(n + 6) { animation-delay: 150ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html, body {
+  overflow-x: hidden;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+}
+
+/* Textura sutil de papel envejecido, usada en el masthead y el hero. */
+.paper-texture {
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(0, 0, 0, 0.04) 0%, transparent 40%),
+    radial-gradient(circle at 80% 60%, rgba(0, 0, 0, 0.05) 0%, transparent 45%),
+    radial-gradient(circle at 50% 90%, rgba(0, 0, 0, 0.03) 0%, transparent 50%);
+}
+
+::selection {
+  background: var(--color-mustard);
+  color: var(--color-leather-dark);
+}
+
+/* ---- Prose para posts largos (write-ups técnicos) ----
+   Variante de lectura de .prose-notes del hub: mismos tokens de color,
+   pero pensada para artículos largos con bloques de código e imágenes
+   en vez de notas cortas tipeadas en la app. */
+.prose-post {
+  font-size: 1.0625rem;
+  line-height: 1.85;
+  color: var(--color-ink-2);
+  overflow-wrap: anywhere;
+}
+.prose-post :is(h2, h3) {
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+  color: var(--color-ink);
+}
+.prose-post h2 {
+  font-size: 1.5rem;
+  margin: 2.5em 0 1em;
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid var(--color-paper-line);
+}
+.prose-post h3 {
+  font-size: 1.15rem;
+  margin: 2em 0 0.75em;
+}
+.prose-post p { margin: 1.25em 0; }
+.prose-post ul, .prose-post ol { margin: 1.25em 0; padding-left: 1.4em; }
+.prose-post ul { list-style: disc; }
+.prose-post ol { list-style: decimal; }
+.prose-post li { margin: 0.4em 0; }
+.prose-post strong { color: var(--color-ink); font-weight: 600; }
+.prose-post blockquote {
+  border-left: 2px solid var(--color-rust);
+  padding-left: 1em;
+  color: var(--color-ink-soft);
+  margin: 1.5em 0;
+  font-style: italic;
+}
+.prose-post code {
+  background: var(--color-paper-dark);
+  border: 1px solid var(--color-paper-line);
+  border-radius: 0.3em;
+  padding: 0.15em 0.4em;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--color-ink);
+}
+.prose-post pre {
+  background: var(--color-paper-dark);
+  border: 1px solid var(--color-paper-line);
+  border-radius: 0.6em;
+  padding: 1.1em 1.25em;
+  overflow-x: auto;
+  margin: 1.75em 0;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  line-height: 1.7;
+}
+.prose-post pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-ink-2);
+}
+.prose-post a {
+  color: var(--color-rust-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose-post img {
+  border-radius: 0.5em;
+  border: 1px solid var(--color-paper-line);
+  margin: 1.75em 0;
+}
+.prose-post svg {
+  margin: 1.75em 0;
+  display: block;
+}
+.prose-post .table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 1.5em 0;
+}
+.prose-post table {
+  width: 100%;
+  min-width: max-content;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+.prose-post th, .prose-post td {
+  border: 1px solid var(--color-paper-line);
+  padding: 0.5em 0.75em;
+  text-align: left;
+  vertical-align: top;
+}
+.prose-post th { background: var(--color-paper-dark); color: var(--color-ink); font-weight: 600; }
+
+/* Recuadro "Concept" dentro de un post (definición destacada). */
+.concept-box {
+  background: var(--color-paper-dark);
+  border-left: 3px solid var(--color-rust);
+  padding: 1.1em 1.4em;
+  border-radius: 0 0.5em 0.5em 0;
+  margin: 1.75em 0;
+}
+.concept-box .concept-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-rust-text);
+  margin-bottom: 0.5em;
+}
+.concept-box p {
+  margin: 0;
+  color: var(--color-ink-soft);
+  line-height: 1.75;
+}
+.concept-box strong {
+  color: var(--color-rust-text);
+}

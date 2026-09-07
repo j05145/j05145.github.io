@@ -1,0 +1,124 @@
+---
+title: "From Zero to Admin: Account Takeover via GraphQL Enumeration and Authorization Bypass"
+date: "2025-01-01"
+dateLabel: "2025"
+description: "A chain of GraphQL introspection, a leaked OTP, and broken function-level authorization that led to full administrative account takeover from an unauthenticated position."
+tags: ["Web", "GraphQL", "BFLA", "Account Takeover", "API Security"]
+---
+
+## How to Approach GraphQL Security Testing
+
+GraphQL targets tend to reveal a lot more about themselves than REST APIs do, if you know where to ask. The starting point is almost always introspection. Most development environments have it enabled by default, and it frequently gets left on in production because nothing in the deployment process specifically turns it off.
+
+When you identify a GraphQL endpoint, send an introspection query before anything else. Common endpoint paths are `/graphql`, `/api/graphql`, `/v1/graphql`, and `/query`. If none of those work, watch POST requests in Burp during normal application use and look for bodies with a `query` key and `Content-Type: application/json`.
+
+Once you have the schema, load it into InQL in Burp or into GraphQL Voyager to visualize the full type map. Pay specific attention to mutations, and within those, look for anything that touches user roles, account management, or admin functions. These are the operations most likely to have missing authorization checks.
+
+For authorization testing, do not rely on the UI to tell you what is accessible. Authenticate as a low-privileged user and call every mutation you found directly through Burp. Many APIs return HTTP 200 for both authorized and unauthorized operations and only differ in the response body, so read the response carefully rather than relying on status codes alone.
+
+Check every field in every mutation response, not just the ones you expect. Developers sometimes add debugging fields during development that expose OTPs, tokens, or internal identifiers, and forget to remove them before deploying to production. Those fields are not always documented and will not show up unless you look at the raw response.
+
+If introspection is disabled, field suggestion errors can still help you enumerate the schema. GraphQL returns hints like "Did you mean fieldName?" when you query a nonexistent field that resembles a real one. Clairvoyance automates this process and can reconstruct much of the schema even without introspection enabled.
+
+## Background
+
+During a web application assessment I found a chain of vulnerabilities that allowed full administrative account takeover starting from a completely unauthenticated position. No credentials, no prior access, no brute force. The chain relied on three separate issues that individually ranged from medium to high severity but combined into something critical.
+
+GraphQL is a good example of a technology where the default behavior works against security. Introspection was never designed to be a vulnerability. It is a developer feature. But the same transparency that makes it useful for building frontends also makes it useful for attackers mapping an API they have never seen before. The same applies to verbose error messages and schema-level discoverability. These are not bugs, they are features that were never turned off in the right place.
+
+## What is GraphQL?
+
+GraphQL is a query language for APIs developed by Facebook and open-sourced in 2015. Unlike REST, which exposes multiple fixed endpoints, GraphQL exposes a single endpoint and lets clients define exactly what data they want to retrieve or modify in each request. Operations that read data are called queries. Operations that modify data are called mutations.
+
+<Concept>
+**Introspection** is a built-in GraphQL feature that allows any client to query the schema itself and get back a complete list of every available type, query, mutation, and field. In development it powers autocomplete and documentation tools. In production, left enabled, it gives an attacker a complete map of the API before they have even found a single vulnerability.
+</Concept>
+
+<FlowChart
+  title="GraphQL Account Takeover Attack Chain"
+  steps={[
+    { label: "Recon", title: "GraphQL introspection enabled", subtitle: "Full schema exposed without authentication", tone: "neutral" },
+    { label: "Step 1", title: "OTP returned in API response", subtitle: "sendOTP mutation leaks code in JSON", tone: "warn" },
+    { label: "Step 2", title: "Broken Function Level Authorization", subtitle: "Low-privilege user calls adminSetRole", tone: "warn" },
+    { label: "Bonus", title: "Admin API key in user object", subtitle: "internalApiKey exposed in response", tone: "warn" },
+    { label: "Result", title: "Full admin access + persistent key", subtitle: "", tone: "critical" },
+  ]}
+/>
+
+## Reconnaissance: Reading the Schema
+
+The GraphQL endpoint was accessible without authentication. Sending an introspection query returned the full schema without any error or challenge. I loaded the response into InQL, which parsed it into a tree of every query and mutation the API supported.
+
+Several mutations stood out immediately: `adminUpdateUser`, `adminSetRole`, and `adminDeleteAccount`. These were present in the schema with no documentation suggesting they required elevated privileges. The naming convention made it obvious they were intended for administrative use, but the server had no mechanism to enforce that at the API level.
+
+## Step 1: OTP Exposed in the API Response
+
+The application used one-time passwords for privileged actions. A mutation existed to trigger OTP generation for a given account. When I called it with a target email address, the OTP itself came back in the JSON response. It was supposed to be delivered out-of-band through email or SMS. The fact that it also appeared in the API response meant anyone who could call the mutation could obtain the code without access to the victim's inbox or phone.
+
+<Concept>
+A **one-time password** is a temporary code intended for single use and delivery through a separate channel from the main application. Returning it in the API response breaks both of those guarantees. The code is no longer temporary in a meaningful sense and it no longer requires access to a second channel. It becomes a synchronous credential that any authenticated or unauthenticated caller can retrieve.
+</Concept>
+
+```
+mutation {
+  sendOTP(email: "target@victim.com") {
+    success
+    otp          # Present in response, should not be
+    expiresAt
+  }
+}
+```
+
+## Step 2: Broken Function Level Authorization on Admin Mutations
+
+With a valid user session, I started calling the admin mutations identified during schema enumeration. None of them returned authorization errors. A regular user account could invoke `adminSetRole` and update their own role to administrator. The server did not check the caller's role before executing the operation. It checked only that the caller was authenticated.
+
+<Concept>
+**Broken Function Level Authorization (BFLA)** occurs when an API exposes privileged operations without enforcing role-based access control at the function level. The UI may hide admin buttons from regular users, but if the underlying API endpoint accepts the request from any authenticated caller, the restriction is purely cosmetic. It is listed as API5 in the OWASP API Security Top 10 and is one of the most consistently found vulnerabilities in modern API assessments.
+</Concept>
+
+```
+mutation {
+  adminSetRole(userId: "usr_MYID", role: "ADMIN") {
+    success
+    user {
+      id
+      role    # Returns "ADMIN"
+    }
+  }
+}
+```
+
+## Bonus Finding: Internal API Key in the Admin User Object
+
+After escalating to administrator, I queried the current user object to see what the admin role exposed. One of the fields was `internalApiKey`. This key had broad permissions across the platform and appeared to be a hardcoded internal credential that had been included in the user type during development and never removed. An attacker with admin access could extract this key and use it independently of any session, giving them persistent platform access that would survive password resets and session revocations.
+
+```
+{
+  "data": {
+    "currentUser": {
+      "role": "ADMIN",
+      "internalApiKey": "sk-internal-XXXXXXXXXXXXXXXX"
+    }
+  }
+}
+```
+
+## Impact
+
+- Full administrative access from an unauthenticated starting point
+- Ability to enumerate, modify, or delete any user account in the system
+- Extraction of an internal API key with platform-wide permissions surviving session revocation
+- Complete schema disclosure enabling further targeted attacks against the application
+
+## Remediation
+
+- Disable GraphQL introspection in production environments
+- Enforce role-based access control at the resolver level for every mutation, not at the UI layer
+- Remove sensitive fields like internal API keys from GraphQL types entirely rather than hiding them conditionally
+- Never return OTPs, reset tokens, or security codes in API responses regardless of the caller's authentication state
+- Audit all mutations for missing authorization checks, especially those with privileged naming conventions
+
+---
+
+*Vulnerability details have been generalized to protect client confidentiality. All findings were reported and remediated as part of the engagement.*

