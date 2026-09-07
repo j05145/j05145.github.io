@@ -17,6 +17,27 @@ const STACK = [
   "Linux",
 ];
 
+const EXPERIENCE = [
+  {
+    org: "Thoropass",
+    role: "Penetration Tester",
+    date: "2025 - Present",
+    body: "I conduct end-to-end penetration testing engagements across a wide range of targets including web applications, APIs, mobile apps (iOS & Android), internal networks (Windows & Linux), and cloud environments (AWS, Azure, GCP). I deliver detailed technical and executive-level reports with clear remediation guidance, working closely with clients throughout scoping, execution, and remediation validation.",
+  },
+  {
+    org: "Cybersecurity Blue Team & Red Team",
+    role: "Penetration Tester",
+    date: "2024 - 2025",
+    body: "I work as a Penetration Tester, conducting comprehensive offensive security assessments across cloud infrastructures, web platforms, mobile applications, and internal networks. My role involves simulating real-world cyberattacks to identify and exploit vulnerabilities before malicious actors can. I specialize in Azure security, where I uncover misconfigurations and abuse identity mechanisms to demonstrate risk impact. I also develop custom payloads tailored to specific environments and automate reconnaissance, exploitation, and post-exploitation workflows to maximize efficiency. My findings are documented in detailed technical reports and high-level executive summaries, providing clear remediation guidance and strategic risk mitigation insights for stakeholders.",
+  },
+  {
+    org: "Grey Matter Technologies / Hotel W&P Santo Domingo",
+    role: "Infrastructure Manager - Outsourced to Hotel W&P",
+    date: "2023 - 2024",
+    body: "I served as the Infrastructure Manager, where I led the end-to-end design, deployment, and lifecycle management of secure, high-performance IT systems across both on-premises and cloud environments. My responsibilities included architecting resilient network and server infrastructures, implementing robust cybersecurity controls, and optimizing system performance for critical business operations. I ensured high availability and business continuity through strategic backup, monitoring, and disaster recovery solutions. Additionally, I directed cross-functional teams in delivering infrastructure upgrades, enforced compliance with industry security standards, and continuously evaluated emerging technologies to enhance operational efficiency and scalability.",
+  },
+];
+
 export default function HomePage() {
   const posts = getAllPosts().slice(0, 3);
 
@@ -55,6 +76,26 @@ export default function HomePage() {
       </section>
 
       <section className="mx-auto max-w-3xl px-6 py-16">
+        <div className="flex items-baseline justify-between">
+          <h2 className="font-display text-2xl text-ink">Experience</h2>
+          <Link href="/experience" className="text-sm text-rust-text hover:underline">
+            View all
+          </Link>
+        </div>
+
+        <div className="stagger-children mt-8 flex flex-col gap-4">
+          {EXPERIENCE.map((job) => (
+            <Card key={job.org}>
+              <p className="text-xs text-ink-soft">{job.date}</p>
+              <h3 className="mt-1 font-display text-lg text-ink">{job.org}</h3>
+              <p className="text-sm text-rust-text">{job.role}</p>
+              <p className="mt-3 text-sm text-ink-soft">{job.body}</p>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-3xl border-t border-paper-line px-6 py-16">
         <div className="flex items-baseline justify-between">
           <h2 className="font-display text-2xl text-ink">Latest write-ups</h2>
           <Link href="/blog" className="text-sm text-rust-text hover:underline">
