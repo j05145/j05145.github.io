@@ -4,7 +4,7 @@ import { getAllPosts } from "@/lib/posts";
 import { LinkButton } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { CertsFeatured } from "@/components/home/certs-featured";
+import { CertPills } from "@/components/home/cert-pills";
 
 const STACK = [
   "Burp Suite",
@@ -73,10 +73,9 @@ export default function HomePage() {
               Get in touch
             </LinkButton>
           </div>
+          <CertPills />
         </div>
       </section>
-
-      <CertsFeatured />
 
       <section className="mx-auto max-w-3xl px-6 py-16">
         <div className="flex items-baseline justify-between">
