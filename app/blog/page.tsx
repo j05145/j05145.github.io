@@ -16,7 +16,7 @@ export default function BlogIndexPage() {
     <div className="mx-auto max-w-3xl px-6 py-16">
       <h1 className="font-display text-4xl text-ink">Blog</h1>
       <p className="mt-3 text-ink-soft">
-        Real attack chains from penetration testing engagements — root causes, remediation, and how to
+        Real attack chains from penetration testing engagements: root causes, remediation, and how to
         find this class of issue yourself.
       </p>
 

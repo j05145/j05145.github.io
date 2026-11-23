@@ -19,7 +19,7 @@ const JOBS = [
     role: "Penetration Tester",
     date: "Nov 2025 – Present",
     intro:
-      "Thoropass is a compliance and security assurance platform that helps companies achieve and maintain certifications like SOC 2, ISO 27001, and HIPAA. As part of their pentest team, I work with clients going through annual compliance cycles who need penetration testing as part of their audit requirements. Engagements span the full attack surface: web applications, APIs, mobile apps, cloud environments, internal networks, and increasingly, AI systems. The work goes beyond remote assessments — I have traveled to Miami to conduct on-site engagements for clients requiring in-person testing of their infrastructure.",
+      "Thoropass is a compliance and security assurance platform that helps companies achieve and maintain certifications like SOC 2, ISO 27001, and HIPAA. As part of their pentest team, I work with clients going through annual compliance cycles who need penetration testing as part of their audit requirements. Engagements span the full attack surface: web applications, APIs, mobile apps, cloud environments, internal networks, and increasingly, AI systems. The work goes beyond remote assessments: I have traveled to Miami to conduct on-site engagements for clients requiring in-person testing of their infrastructure.",
     responsibilities: [
       "Conduct penetration tests across web applications, APIs, mobile (iOS and Android), cloud environments (AWS, Azure), and internal networks following OWASP, PTES, and NIST methodologies",
       "Perform manual and automated testing using Burp Suite Professional, Nmap, Nuclei, ffuf, and custom scripts",
@@ -36,7 +36,7 @@ const JOBS = [
     role: "Penetration Tester",
     date: "March 2024 – Nov 2025",
     intro:
-      "A Dominican Republic-based offensive security firm — this is where I built the foundation of my pentesting career. The client base was broad: banking institutions, hospitals, schools, food and beverage companies, government entities, and hospitality businesses, each with its own risk profile and compliance requirements. I also had the opportunity to speak at national cybersecurity events including RedTeamRD and HackonRD.",
+      "A Dominican Republic-based offensive security firm. This is where I built the foundation of my pentesting career. The client base was broad: banking institutions, hospitals, schools, food and beverage companies, government entities, and hospitality businesses, each with its own risk profile and compliance requirements. I also had the opportunity to speak at national cybersecurity events including RedTeamRD and HackonRD.",
     responsibilities: [
       "Performed penetration testing across cloud environments (Azure, AWS, GCP), web applications, and internal networks, identifying vulnerabilities from informational to critical severity",
       "Conducted Azure and Office 365 security assessments, including Azure AD / Entra ID analysis, IAM and RBAC misconfiguration review, managed identities, and Key Vault security",
@@ -51,10 +51,10 @@ const JOBS = [
   },
   {
     org: "Grey Matter Technologies / Hotel W&P Santo Domingo",
-    role: "Infrastructure Manager — Outsourced to Hotel W&P",
+    role: "Infrastructure Manager, outsourced to Hotel W&P",
     date: "Jan 2023 – March 2024",
     intro:
-      "Grey Matter Technologies is a managed IT services provider. In this role I was outsourced full-time to Hotel W&P Santo Domingo, where I served as their on-site IT department — my entry point into infrastructure and the technical foundation I later brought into security. I started at level 1 support and, by the time I left, was managing the entire IT environment of the hotel independently.",
+      "Grey Matter Technologies is a managed IT services provider. In this role I was outsourced full-time to Hotel W&P Santo Domingo, where I served as their on-site IT department. It was my entry point into infrastructure and the technical foundation I later brought into security. I started at level 1 support and, by the time I left, was managing the entire IT environment of the hotel independently.",
     responsibilities: [
       "Handled technical support from level 1 through level 3, resolving end-user issues, server incidents, and network outages across the property",
       "Administered and maintained Windows Active Directory, managing user accounts, group policies, and access control across all hotel departments",
@@ -82,7 +82,7 @@ export default function ExperiencePage() {
         <p>
           What keeps me in this field is the feeling of making something do what it was never meant to
           do. Finding the hidden path, breaking what looked unbreakable, and then explaining exactly how
-          and why — that is what drives me. I am a creative, curious, and persistent professional who
+          and why: that is what drives me. I am a creative, curious, and persistent professional who
           communicates clearly and does not give up until the job is done.
         </p>
       </div>

@@ -10,7 +10,7 @@ tags: ["XXE", "Azure", "OOB", "Cloud Security", "Web"]
 
 XXE vulnerabilities are easy to miss if you are only looking at JSON APIs. They live in XML parsers, and XML is more common than people expect: SOAP endpoints, document upload features, data import flows, RSS and Atom feeds, office file formats, and legacy transactional APIs. Any place where the application accepts and parses XML is worth probing.
 
-The first test is always a basic external entity reference. Point it at a domain you control using Burp Collaborator or an OAST service and see if you get a callback. If you do, the parser is resolving external entities and you have confirmed XXE. The response does not need to contain any data at this stage — the DNS or HTTP ping is enough.
+The first test is always a basic external entity reference. Point it at a domain you control using Burp Collaborator or an OAST service and see if you get a callback. If you do, the parser is resolving external entities and you have confirmed XXE. The response does not need to contain any data at this stage; the DNS or HTTP ping is enough.
 
 When the response does not reflect data back to you, that does not mean the vulnerability is unexploitable. Out-of-band exfiltration works by defining an external DTD that reads a local file and sends its contents as a parameter to your listener. The data travels in a DNS lookup or HTTP request rather than in the HTTP response, which is why it bypasses filters that only look at what the server returns.
 
@@ -94,7 +94,7 @@ The web.config also contained database credentials. We attempted to connect but 
 
 ## Remediation
 
-- Disable external entity resolution in all XML parsers by default — set `XmlResolver` to null
+- Disable external entity resolution in all XML parsers by default: set `XmlResolver` to null
 - Remove internal API documentation from publicly accessible directories
 - Store secrets in Azure Key Vault, not in `web.config` or `.env` files
 - Audit and restrict path mappings to limit exposure of sensitive file systems through mounted shares

@@ -4,7 +4,8 @@ import { CERTS } from "@/lib/certs";
 
 export const metadata: Metadata = {
   title: "About",
-  description: "Josias Fabián — sound technician, ITLA-trained, offensive security.",
+  description:
+    "Josias Fabián: penetration tester certified in CWEE, BSCP, CWES and CPAZ. ITLA-trained, conference speaker and church sound technician.",
 };
 
 const TALKS = [

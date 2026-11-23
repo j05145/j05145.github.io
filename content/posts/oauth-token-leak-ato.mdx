@@ -62,7 +62,7 @@ An **open redirect** is a vulnerability where an application accepts an external
 
 ## The Attack Chain
 
-### Step 1 — Crafting the Authorization Request
+### Step 1: Crafting the Authorization Request
 
 The authorization URL points to the legitimate Cognito hosted UI. The `redirect_uri` points to the application's real callback, which Cognito has registered. But appended to that callback is a `next` parameter pointing to attacker infrastructure. When Cognito redirects to the callback after authentication, the callback forwards the user again using that parameter, carrying the code along.
 
@@ -75,11 +75,11 @@ https://auth.target.com/oauth2/authorize
   &scope=openid+profile+email
 ```
 
-### Step 2 — Victim Authenticates on the Real Cognito Page
+### Step 2: Victim Authenticates on the Real Cognito Page
 
 The victim receives this link and clicks it. They land on a completely legitimate Cognito login page at the real domain. There is no spoofing. They enter their credentials and complete any MFA required. Cognito issues a valid authorization code and redirects back to the callback.
 
-### Step 3 — Code Forwarded to Attacker Infrastructure
+### Step 3: Code Forwarded to Attacker Infrastructure
 
 The callback receives the code and reads the `next` parameter. Without validating the destination, it redirects the victim to the attacker's server with the code in the URL. The attacker's server logs the incoming request.
 
@@ -89,7 +89,7 @@ GET /capture?code=eyJhbGciOiJSUzI1NiJ9.XXXX&state=...
 # Code extracted. Victim is redirected again to look normal.
 ```
 
-### Step 4 — Exchanging the Code for Tokens
+### Step 4: Exchanging the Code for Tokens
 
 The attacker takes the intercepted code and sends it directly to Cognito's token endpoint. Since the client is public, no secret is required. Cognito validates the code and returns a full token set belonging to the victim.
 

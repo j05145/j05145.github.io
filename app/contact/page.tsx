@@ -45,7 +45,7 @@ export default function ContactPage() {
   return (
     <div className="mx-auto max-w-3xl px-6 py-16">
       <h1 className="font-display text-4xl text-ink">Contact</h1>
-      <p className="mt-3 text-ink-soft">Reach out through any of these — email is fastest.</p>
+      <p className="mt-3 text-ink-soft">Reach out through any of these. Email is fastest.</p>
 
       <div className="mt-10 grid gap-4 sm:grid-cols-2">
         {LINKS.map((link) => {

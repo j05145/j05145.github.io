@@ -33,7 +33,7 @@ const EXPERIENCE = [
   },
   {
     org: "Grey Matter Technologies / Hotel W&P Santo Domingo",
-    role: "Infrastructure Manager - Outsourced to Hotel W&P",
+    role: "Infrastructure Manager, outsourced to Hotel W&P",
     date: "2023 - 2024",
     body: "I served as the Infrastructure Manager, where I led the end-to-end design, deployment, and lifecycle management of secure, high-performance IT systems across both on-premises and cloud environments. My responsibilities included architecting resilient network and server infrastructures, implementing robust cybersecurity controls, and optimizing system performance for critical business operations. I ensured high availability and business continuity through strategic backup, monitoring, and disaster recovery solutions. Additionally, I directed cross-functional teams in delivering infrastructure upgrades, enforced compliance with industry security standards, and continuously evaluated emerging technologies to enhance operational efficiency and scalability.",
   },

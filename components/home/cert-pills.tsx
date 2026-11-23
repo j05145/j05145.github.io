@@ -24,7 +24,7 @@ export function CertPills() {
               href={cert.url}
               target="_blank"
               rel="noreferrer noopener"
-              title={`Verify ${cert.short} — ${cert.name} (${cert.issuer})`}
+              title={`Verify ${cert.short}: ${cert.name} (${cert.issuer})`}
               className={className}
             >
               {content}

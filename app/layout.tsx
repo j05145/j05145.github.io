@@ -22,7 +22,7 @@ const SITE_URL = "https://iamjfabian.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: "Josias Fabián — iamJfabian", template: "%s — iamJfabian" },
+  title: { default: "Josias Fabián | iamJfabian", template: "%s | iamJfabian" },
   description:
     "Penetration tester writing about web, API, cloud and network security research: real attack chains, root causes, and remediation.",
   icons: { icon: "/favicon.png" },
