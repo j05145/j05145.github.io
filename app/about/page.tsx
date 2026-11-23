@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Card } from "@/components/ui/card";
+import { CERTS } from "@/lib/certs";
 
 export const metadata: Metadata = {
   title: "About",
@@ -10,12 +11,6 @@ const TALKS = [
   { org: "RedTeamRD Meetup", title: "Azure Cloud Hacking: Discovering Azure's Flaws", date: "June 2024" },
 ];
 
-const CERTS = [
-  { name: "Burp Suite Certified Practitioner (BSCP)", status: "Issued 2024" },
-  { name: "Certified Bug Bounty Hunter (CBBH)", status: "Issued 2024" },
-  { name: "Certified Pentesting Against Azure Cloud", status: "Issued 2024" },
-  { name: "Certified Web Exploitation Expert (CWEE)", status: "In progress" },
-];
 
 const VOLUNTEER = [
   {
@@ -71,12 +66,24 @@ export default function AboutPage() {
 
       <h2 className="mt-14 font-display text-2xl text-ink">Certifications</h2>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        {CERTS.map((cert) => (
-          <Card key={cert.name}>
-            <p className="text-ink">{cert.name}</p>
-            <p className="mt-1 text-xs text-ink-soft">{cert.status}</p>
-          </Card>
-        ))}
+        {CERTS.map((cert) => {
+          const card = (
+            <Card className="h-full">
+              <p className="text-ink">{cert.name} ({cert.short})</p>
+              <p className="mt-1 text-xs text-ink-soft">
+                {cert.issuer} · Issued {cert.year}
+                {cert.url && <span className="text-rust-text"> · Verify credential ↗</span>}
+              </p>
+            </Card>
+          );
+          return cert.url ? (
+            <a key={cert.short} href={cert.url} target="_blank" rel="noreferrer noopener">
+              {card}
+            </a>
+          ) : (
+            <div key={cert.short}>{card}</div>
+          );
+        })}
       </div>
 
       <h2 className="mt-14 font-display text-2xl text-ink">Community</h2>
