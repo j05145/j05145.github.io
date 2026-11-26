@@ -9,7 +9,16 @@ import { CertPills } from "@/components/home/cert-pills";
 const STACK = ["Burp Suite", "Python", "Bash", "Azure", "AWS", "GCP", "Docker", "Wireshark", "Linux"];
 
 // Short summaries for the home timeline; the full descriptions live on /experience.
-const EXPERIENCE = [
+// The independent entry goes first and gets a hollow dot: it runs alongside the
+// jobs rather than being one of them, so it has no dates.
+const EXPERIENCE: { org: string; role: string; date: string; body: string; independent?: boolean }[] = [
+  {
+    org: "Independent engagements",
+    role: "Independent Penetration Tester",
+    date: "Alongside my full-time roles",
+    body: "For several years I have also run penetration tests on my own, outside the companies I have worked for: banks, financial institutions and cloud environments.",
+    independent: true,
+  },
   {
     org: "Thoropass",
     role: "Penetration Tester",
@@ -106,7 +115,12 @@ export default function HomePage() {
           <ol className="mt-8 flex flex-col gap-6 border-l border-paper-line pl-5">
             {EXPERIENCE.map((job) => (
               <li key={job.org} className="relative">
-                <span aria-hidden="true" className="absolute -left-[25px] top-1.5 h-2.5 w-2.5 rounded-full bg-rust" />
+                <span
+                  aria-hidden="true"
+                  className={`absolute -left-[25px] top-1.5 h-2.5 w-2.5 rounded-full ${
+                    job.independent ? "border-2 border-rust bg-paper" : "bg-rust"
+                  }`}
+                />
                 <p className="text-xs text-ink-soft">{job.date}</p>
                 <h3 className="font-display text-ink">{job.org}</h3>
                 <p className="text-sm text-rust-text">{job.role}</p>
