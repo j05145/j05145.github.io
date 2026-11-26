@@ -42,7 +42,8 @@ const EXPERIENCE: { org: string; role: string; date: string; body: string; indep
 // Split hero: name, stack and actions on the left; avatar and certs on the
 // right. Below, write-ups and an experience timeline side by side.
 export default function HomePage() {
-  const posts = getAllPosts().slice(0, 3);
+  // Every write-up stays on the home: a new post should never push an older one off.
+  const posts = getAllPosts();
 
   return (
     <div>
@@ -82,7 +83,7 @@ export default function HomePage() {
       <div className="mx-auto grid max-w-5xl gap-12 px-6 py-16 md:grid-cols-[1.5fr_1fr]">
         <section>
           <div className="flex items-baseline justify-between gap-3">
-            <h2 className="font-display text-2xl text-ink">Latest write-ups</h2>
+            <h2 className="font-display text-2xl text-ink">Write-ups</h2>
             <Link href="/blog" className="text-sm text-rust-text hover:underline">
               View all
             </Link>
