@@ -11,31 +11,68 @@ const STACK = ["Burp Suite", "Python", "Bash", "Azure", "AWS", "GCP", "Docker", 
 // Short summaries for the home timeline; the full descriptions live on /experience.
 // The independent entry goes first and gets a hollow dot: it runs alongside the
 // jobs rather than being one of them, so it has no dates.
-const EXPERIENCE: { org: string; role: string; date: string; body: string; independent?: boolean }[] = [
+type Experience = {
+  org: string;
+  role: string;
+  date: string;
+  body: string;
+  highlights: string[];
+  tags: string[];
+  independent?: boolean;
+};
+
+const EXPERIENCE: Experience[] = [
   {
     org: "Independent engagements",
     role: "Independent Penetration Tester",
     date: "Alongside my full-time roles",
-    body: "For several years I have also run penetration tests on my own, outside the companies I have worked for: banks, financial institutions and cloud environments.",
+    body: "For several years I have also run penetration tests on my own, outside the companies I have worked for.",
+    highlights: [
+      "Banks and financial institutions",
+      "Cloud environments",
+      "Engagements scoped and reported directly with each client",
+    ],
+    tags: ["Banking", "Finance", "Cloud"],
     independent: true,
   },
   {
     org: "Thoropass",
     role: "Penetration Tester",
-    date: "2025 - Present",
-    body: "End-to-end engagements across web, APIs, iOS and Android, internal networks and AWS, Azure and GCP, with technical and executive reporting.",
+    date: "Nov 2025 - Present",
+    body: "Contract pentester on a 10+ person internal offensive team, testing SaaS and AI companies pursuing SOC 2, ISO 27001 and PCI DSS.",
+    highlights: [
+      "Web apps, APIs, iOS and Android, cloud environments and LLM/AI features",
+      "White-box source code review to catch what black-box testing misses",
+      "Proof-of-concept exploits, CVSS-scored reports, client debriefs and retests",
+      "On-site engagements in Miami for clients requiring in-person testing",
+    ],
+    tags: ["Web", "API", "Mobile", "LLM/AI", "AWS", "Azure"],
   },
   {
     org: "Cybersecurity Blue Team & Red Team",
     role: "Penetration Tester",
-    date: "2024 - 2025",
-    body: "Offensive assessments with a focus on Azure identity abuse, custom payloads and automated recon and post-exploitation.",
+    date: "Mar 2024 - Nov 2025",
+    body: "Dominican offensive security firm serving banking, healthcare, government and enterprise clients.",
+    highlights: [
+      "Azure and Office 365 assessments: Entra ID, IAM and RBAC, managed identities, Key Vault",
+      "iOS and Android banking apps: certificate pinning, hardcoded credentials, exposed API keys",
+      "Active Directory and internal networks: privilege escalation and lateral movement",
+      "Speaker at RedTeamRD and HackonRD",
+    ],
+    tags: ["Azure", "Mobile banking", "Active Directory", "Web"],
   },
   {
     org: "Grey Matter Technologies",
     role: "Infrastructure Manager, outsourced to Hotel W&P",
-    date: "2023 - 2024",
-    body: "Designed and ran secure on-prem and cloud infrastructure, backups, monitoring and disaster recovery.",
+    date: "Jan 2023 - Mar 2024",
+    body: "Served full time as the on-site IT department of Hotel W&P Santo Domingo, growing from level 1 support to running the whole environment.",
+    highlights: [
+      "Windows Active Directory, group policies and access control across departments",
+      "Palo Alto and Cisco firewalls, VPN access and network segmentation on Ubiquiti",
+      "Azure AD and Google Workspace administration",
+      "Incident response and root cause analysis in a 24/7 hospitality environment",
+    ],
+    tags: ["Active Directory", "Firewalls", "Networking"],
   },
 ];
 
@@ -126,6 +163,16 @@ export default function HomePage() {
                 <h3 className="font-display text-ink">{job.org}</h3>
                 <p className="text-sm text-rust-text">{job.role}</p>
                 <p className="mt-2 text-sm text-ink-soft">{job.body}</p>
+                <ul className="mt-3 list-disc space-y-1 pl-4 text-sm text-ink-soft marker:text-rust">
+                  {job.highlights.map((h) => (
+                    <li key={h}>{h}</li>
+                  ))}
+                </ul>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {job.tags.map((tag) => (
+                    <Badge key={tag}>{tag}</Badge>
+                  ))}
+                </div>
               </li>
             ))}
           </ol>
