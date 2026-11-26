@@ -85,9 +85,9 @@ export default function HomePage() {
   return (
     <div>
       <section className="paper-texture border-b border-paper-line bg-leather text-cream">
-        <div className="mx-auto flex max-w-5xl flex-wrap-reverse items-center gap-10 px-6 py-16 md:py-20">
-          <div className="flex min-w-0 flex-[999_1_420px] flex-col gap-5">
-            <h1 className="font-display text-4xl tracking-wide md:text-5xl animate-fade-in-up">Josias Fabián</h1>
+        <div className="mx-auto flex max-w-5xl flex-wrap-reverse items-center gap-6 px-6 py-8 md:py-10">
+          <div className="flex min-w-0 flex-[999_1_420px] flex-col gap-3">
+            <h1 className="font-display text-3xl tracking-wide md:text-4xl animate-fade-in-up">Josias Fabián</h1>
             <p className="text-cream/70">Penetration Tester · Web · API · Mobile · Cloud · Network</p>
             <div className="flex flex-wrap gap-2">
               {STACK.map((tech) => (
@@ -107,8 +107,8 @@ export default function HomePage() {
             <Image
               src="/images/avatar.png"
               alt="Josias Fabián"
-              width={176}
-              height={176}
+              width={120}
+              height={120}
               className="rounded-full border-2 border-leather-line animate-pop-in"
               priority
             />
